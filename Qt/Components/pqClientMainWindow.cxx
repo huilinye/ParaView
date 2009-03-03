@@ -877,6 +877,10 @@ void pqClientMainWindow::constructorHelper()
   this->onSettingsModified();
 #endif // PARAVIEW_ENABLE_PYTHON
 
+  // QOpenFileEvent handling (Michael Wild <themiwi@users.sourceforge.net>)
+  QObject::connect(
+      &this->Implementation->Core->multiViewManager(), SIGNAL(triggerFileOpen(const QStringList&)),
+      this->Implementation->Core, SLOT(onFileOpen(const QStringList&)));
 
   // Restore the state of the window ...
   pqApplicationCore::instance()->settings()->restoreState("pqClientMainWindow", *this);
