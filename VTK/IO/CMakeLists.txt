@@ -81,6 +81,7 @@ vtkMoleculeReaderBase.cxx
 vtkNetCDFCOARDSReader.cxx
 vtkNetCDFReader.cxx
 vtkOBJReader.cxx
+vtkOggTheoraWriter.cxx
 vtkOutputStream.cxx
 vtkOpenFOAMReader.cxx
 vtkPDBReader.cxx
