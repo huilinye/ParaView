@@ -95,3 +95,7 @@ rm -rf "$PythonDir/paraview/pv_compile_complete"
 #rm -rf "$SupportDir/Documentation/cmake_install.cmake"
 #rm -rf "$SupportDir/Documentation/CTestTestfile.cmake"
 #rm -rf "$SupportDir/Documentation/Makefile"
+
+# Add an empty qt.conf to prevent the loading of imageformats plugins
+#
+touch "$ResourcesDir/qt.conf"
