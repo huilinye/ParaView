@@ -60,12 +60,14 @@ ENDIF(VTK_SIZEOF_LONG_LONG MATCHES "^8$")
 IF(VTK_HAS_UINT64_ARRAY)
   SET(ConditionalTests ${ConditionalTests} TestSQLiteDatabase.cxx)
 ENDIF(VTK_HAS_UINT64_ARRAY)
+IF(VTK_USE_OGGTHEORA_ENCODER)
+  SET(ConditionalTests ${ConditionalTests} TestOggTheoraWriter.cxx)
+ENDIF(VTK_USE_OGGTHEORA_ENCODER)
 
 CREATE_TEST_SOURCELIST(Tests ${KIT}CxxTests.cxx
   TestXML.cxx
   TestCompress.cxx
   TestSQLDatabaseSchema.cxx
-  TestOggTheoraWriter.cxx
   ${ConditionalTests}
   EXTRA_INCLUDE vtkTestDriver.h
 )
@@ -120,7 +122,6 @@ IF (VTK_LARGE_DATA_ROOT)
   ENDIF (VTK_USE_DISPLAY AND VTK_USE_RENDERING)
 ENDIF (VTK_LARGE_DATA_ROOT)
 
-ADD_TEST(TestOggTheoraWriter ${CXX_TEST_PATH}/${KIT}CxxTests TestOggTheoraWriter)
 ADD_TEST(TestSQLDatabaseSchema ${CXX_TEST_PATH}/${KIT}CxxTests TestSQLDatabaseSchema)
 
 IF(WIN32 AND VTK_USE_VIDEO_FOR_WINDOWS)
@@ -141,6 +142,9 @@ ENDIF(VTK_USE_POSTGRES AND VTK_PSQL_TEST_URL)
 IF(VTK_USE_MYSQL AND VTK_MYSQL_TEST_URL)
   ADD_TEST(TestMySQLDatabase ${CXX_TEST_PATH}/${KIT}CxxTests TestMySQLDatabase)
 ENDIF(VTK_USE_MYSQL AND VTK_MYSQL_TEST_URL)
+IF(VTK_USE_OGGTHEORA_ENCODER)
+  ADD_TEST(TestOggTheoraWriter ${CXX_TEST_PATH}/${KIT}CxxTests TestOggTheoraWriter)
+ENDIF(VTK_USE_OGGTHEORA_ENCODER)
 
 IF(VTK_USE_INFOVIS)
   ADD_TEST(TestDataObjectIO ${CXX_TEST_PATH}/${KIT}CxxTests TestDataObjectIO)
