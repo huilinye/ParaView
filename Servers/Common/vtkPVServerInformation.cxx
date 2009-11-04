@@ -48,7 +48,11 @@ vtkPVServerInformation::vtkPVServerInformation()
   this->AVISupport = 1;
 # endif
 #endif
+#if defined(VTK_USE_OGGTHEORA_ENCODER)
   this->OGVSupport = 1;
+#else
+  this->OGVSupport = 0;
+#endif
 
   this->RenderModuleName = NULL;
   this->MachinesInternals = new vtkPVServerOptionsInternals;

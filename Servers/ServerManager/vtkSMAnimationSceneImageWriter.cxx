@@ -45,7 +45,11 @@
 #   include "vtkFFMPEGWriter.h"
 # endif
 #endif
-#include "vtkOggTheoraWriter.h"
+
+#ifdef VTK_USE_OGGTHEORA_ENCODER
+#  include "vtkOggTheoraWriter.h"
+#  include "vtkPVConfig.h"
+#endif
 
 vtkStandardNewMacro(vtkSMAnimationSceneImageWriter);
 vtkCxxRevisionMacro(vtkSMAnimationSceneImageWriter, "$Revision$");
@@ -379,6 +383,7 @@ bool vtkSMAnimationSceneImageWriter::CreateWriter()
     }
 # endif
 #endif
+#ifdef VTK_USE_OGGTHEORA_ENCODER
   else if (extension == ".ogv" || extension == ".ogg")
     {
     vtkOggTheoraWriter *ogvwriter = vtkOggTheoraWriter::New();
@@ -388,6 +393,7 @@ bool vtkSMAnimationSceneImageWriter::CreateWriter()
     ogvwriter->SetSubsampling(this->GetSubsampling());
     mwriter = ogvwriter;
     }
+#endif
   else
     {
     vtkErrorMacro("Unknown extension " << extension.c_str());
