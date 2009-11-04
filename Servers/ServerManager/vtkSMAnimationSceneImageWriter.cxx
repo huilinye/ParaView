@@ -63,7 +63,11 @@ vtkSMAnimationSceneImageWriter::vtkSMAnimationSceneImageWriter()
   this->Magnification = 1;
   this->ErrorCode = 0;
   this->Quality = 2; // 0 = low, 1 = medium, 2 = high
+#ifdef PARAVIEW_OGGTHEORA_USE_SUBSAMPLING
+  this->Subsampling = 1;
+#else
   this->Subsampling = 0;
+#endif
   this->ActualSize[0] = this->ActualSize[1] = 0;
 
   this->MovieWriter = 0;
