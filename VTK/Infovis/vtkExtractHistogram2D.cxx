@@ -36,6 +36,7 @@ PURPOSE.  See the above copyright notice for more information.
 //------------------------------------------------------------------------------
 vtkCxxRevisionMacro(vtkExtractHistogram2D, "$Revision$");
 vtkStandardNewMacro(vtkExtractHistogram2D);
+vtkCxxSetObjectMacro(vtkExtractHistogram2D,RowMask,vtkDataArray);
 //------------------------------------------------------------------------------
 // Figure out which histogram bin a pair of values fit into
 static inline int vtkExtractHistogram2DComputeBin(vtkIdType& bin1, 
@@ -86,22 +87,27 @@ vtkExtractHistogram2D::vtkExtractHistogram2D()
   this->ScalarType = VTK_UNSIGNED_INT;
   
   this->SwapColumns = 0;
+  
+  this->RowMask = 0;
 }
 //------------------------------------------------------------------------------
 vtkExtractHistogram2D::~vtkExtractHistogram2D()
 {
+  if (this->RowMask)
+    this->RowMask->Delete();
 }
 //------------------------------------------------------------------------------
 void vtkExtractHistogram2D::PrintSelf(ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
-  os << "ScalarType: " << this->ScalarType << endl;
-  os << "ComponentsToProcess: " << this->ComponentsToProcess[0] << ", " << this->ComponentsToProcess[1] << endl;
-  os << "UseCustomHistogramExtents: " << this->UseCustomHistogramExtents << endl;
-  os << "MaximumBinCount: " << this->MaximumBinCount << endl;
-  os << "SwapColumns: " << this->SwapColumns << endl;
-  os << "NumberOfBins: " << this->NumberOfBins[0] << ", " << this->NumberOfBins[1] << endl;
-  os << "CustomHistogramExtents: " << this->CustomHistogramExtents[0] << ", " << this->CustomHistogramExtents[1] << ", " << this->CustomHistogramExtents[2] << ", " << this->CustomHistogramExtents[3] << endl;
+  os << indent << "ScalarType: " << this->ScalarType << endl;
+  os << indent << "ComponentsToProcess: " << this->ComponentsToProcess[0] << ", " << this->ComponentsToProcess[1] << endl;
+  os << indent << "UseCustomHistogramExtents: " << this->UseCustomHistogramExtents << endl;
+  os << indent << "MaximumBinCount: " << this->MaximumBinCount << endl;
+  os << indent << "SwapColumns: " << this->SwapColumns << endl;
+  os << indent << "NumberOfBins: " << this->NumberOfBins[0] << ", " << this->NumberOfBins[1] << endl;
+  os << indent << "CustomHistogramExtents: " << this->CustomHistogramExtents[0] << ", " << this->CustomHistogramExtents[1] << ", " << this->CustomHistogramExtents[2] << ", " << this->CustomHistogramExtents[3] << endl;
+  os << indent << "RowMask: " << this->RowMask << endl;
 }
 //------------------------------------------------------------------------------
 void vtkExtractHistogram2D::Learn(vtkTable *vtkNotUsed(inData), 
@@ -175,12 +181,18 @@ void vtkExtractHistogram2D::Learn(vtkTable *vtkNotUsed(inData),
   double v1,v2,ct;
   double bwi[2] = {1.0/binWidth[0],1.0/binWidth[1]};
 
+  bool useRowMask = this->RowMask && 
+    this->RowMask->GetNumberOfTuples() == col1->GetNumberOfTuples();
+
   // compute the histogram.  
   this->MaximumBinCount = 0;
   for (int i=0; i<numValues; i++)
     {
     v1 = col1->GetComponent(i,this->ComponentsToProcess[0]);
     v2 = col2->GetComponent(i,this->ComponentsToProcess[1]);
+
+    if (useRowMask && !this->RowMask->GetComponent(i,0))
+      continue;
 
     if (!::vtkExtractHistogram2DComputeBin(bin1,bin2,v1,v2,this->GetHistogramExtents(),this->NumberOfBins,bwi))
       continue;

@@ -45,6 +45,7 @@ vtkDataReader.cxx
 vtkDataSetReader.cxx
 vtkDataSetWriter.cxx
 vtkDataWriter.cxx
+vtkDelimitedTextWriter.cxx
 vtkEnSight6BinaryReader.cxx
 vtkEnSight6Reader.cxx
 vtkEnSightGoldBinaryReader.cxx
@@ -70,6 +71,7 @@ vtkImageReader2Collection.cxx
 vtkImageReader2Factory.cxx
 vtkImageWriter.cxx
 vtkInputStream.cxx
+vtkJavaScriptDataWriter.cxx
 vtkJPEGReader.cxx
 vtkJPEGWriter.cxx
 vtkMFIXReader.cxx
@@ -371,6 +373,18 @@ SET_SOURCE_FILES_PROPERTIES(
   WRAP_EXCLUDE
 )
 
+#-----------------------------------------------------------------------------
+# N-WAY ARRAYS READER AND WRITER
+IF(VTK_USE_N_WAY_ARRAYS)
+
+  SET(Kit_SRCS
+    ${Kit_SRCS}
+    vtkArrayReader.cxx
+    vtkArrayWriter.cxx
+    )
+
+ENDIF(VTK_USE_N_WAY_ARRAYS)
+#-----------------------------------------------------------------------------
 
 SET(Kit_EXTRA_SRCS)
 SET(Kit_EXTRA_CMDS)

@@ -43,20 +43,24 @@
     } \
 }
 
-struct DowncastTest
+class DowncastTest
 {
+public:
   DowncastTest(int& count) :
     Count(count)
   {
   }
 
   template<typename T>
-  void operator()(T* array) const
+  void operator()(T* vtkNotUsed(array)) const
   {
     ++Count;
   }
 
   int& Count;
+
+private:
+  DowncastTest& operator=(const DowncastTest&);
 };
 
 template<template <typename> class TargetT, typename TypesT>

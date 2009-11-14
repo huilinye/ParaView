@@ -18,6 +18,8 @@ IF(PARAVIEW_ENABLE_PYTHON)
 ENDIF(PARAVIEW_ENABLE_PYTHON)
 
 SET(Filters_SRCS
+  vtkAMRDualContour.cxx
+  vtkAMRDualGridHelper.cxx
   vtkAnimationPlayer.cxx
   vtkAppendRectilinearGrid.cxx
   vtkAppendArcLength.cxx
@@ -172,6 +174,7 @@ SET(Filters_SRCS
   )
 
 SET_SOURCE_FILES_PROPERTIES(
+  vtkAMRDualGridHelper.cxx
   vtkPVMain.cxx
   vtkSpyPlotBlock.cxx
   vtkSpyPlotUniReader.cxx

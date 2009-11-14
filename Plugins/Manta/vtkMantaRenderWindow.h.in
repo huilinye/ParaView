@@ -67,24 +67,15 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <vtkMantaConfigure.h>
 
-#if defined(VTK_USE_CARBON)
-#include "vtkCarbonRenderWindow.h"
-#define ParentClass vtkCarbonRenderWindow
-#elif defined(VTK_USE_COCOA)
-#include "vtkCocoaRenderWindow.h"
-#define ParentClass vtkCocoaRenderWindow
-#else
-#include "vtkXOpenGLRenderWindow.h"
-#define ParentClass vtkXOpenGLRenderWindow
-#endif
+#include "@RenderWindowType@.h"
 
 typedef vtkTypeUInt32 uint32;
 
-class vtkMantaRenderWindow : public vtkCarbonRenderWindow
+class vtkMantaRenderWindow : public @RenderWindowType@
 {
 public:
   static vtkMantaRenderWindow *New();
-  vtkTypeRevisionMacro(vtkMantaRenderWindow, vtkCarbonRenderWindow);
+  vtkTypeRevisionMacro(vtkMantaRenderWindow, @RenderWindowType@);
 
   virtual void SetSize(int,int);
 

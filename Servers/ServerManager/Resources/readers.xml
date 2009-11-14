@@ -1811,6 +1811,52 @@
 
    <!-- End ExodusIIReaderCore -->
    </SourceProxy>
+      
+   <SourceProxy name="TecplotReaderCore" 
+                class="vtkTecplotReader"
+                label="VTK Tecplot Reader">
+       <Documentation>
+          Core for TecplotReader
+       </Documentation>
+      
+     <StringVectorProperty
+        name="FileName"
+        command="SetFileName"
+        number_of_elements="1">
+        <FileListDomain name="files"/>
+        <Documentation>
+          The name of the file to load
+        </Documentation>
+     </StringVectorProperty>
+
+     <StringVectorProperty 
+        name="DataArrayInfo"
+        information_only="1">
+        <ArraySelectionInformationHelper attribute_name="Data"/>
+     </StringVectorProperty>
+
+     <StringVectorProperty
+        name="DataArrayStatus"
+        command="SetDataArrayStatus"
+        number_of_elements="0" 
+        repeat_command="1"
+        number_of_elements_per_command="2"
+        element_types="2 0"
+        information_property="DataArrayInfo"
+        label="Data Arrays">
+      
+       <ArraySelectionDomain name="array_list">
+          <RequiredProperties>
+             <Property name="DataArrayInfo" function="ArrayList"/>
+          </RequiredProperties>
+       </ArraySelectionDomain>
+       
+       <Documentation>
+         This property lists what dataset attribute arrays (point data and cell data) to read.
+       </Documentation>
+     </StringVectorProperty>
+     <!-- End TecplotReaderCore-->
+   </SourceProxy>
 
     <!-- End of "internal_sources" -->
   </ProxyGroup>
@@ -1853,6 +1899,7 @@
         <SimpleIntInformationHelper/>
      </IntVectorProperty>
 
+     <!--
      <IntVectorProperty
         name="PositionRange"
         command="SetPositionRange"
@@ -1864,6 +1911,7 @@
              </RequiredProperties>
         </IntRangeDomain>
      </IntVectorProperty>
+     -->
 
      <StringVectorProperty
         name="PointArrayInfo"
@@ -1890,10 +1938,22 @@
         name="MakeCells" 
         command="SetMakeCells" 
         number_of_elements="1"
-        default_values="0" > 
+        default_values="1" > 
        <BooleanDomain name="bool"/>
        <Documentation>
          If this property is set to 1, a VTK_VERTEX cell is created for each point.
+       </Documentation>
+     </IntVectorProperty>
+
+     <IntVectorProperty
+        name="TagSize"
+        command="SetTagSize"
+        label="64-bit Tags"
+        number_of_elements="1"
+        default_values="0" >
+       <BooleanDomain name="bool"/>
+       <Documentation>
+         If this property is false, then 32-bit tags are used for the tag field.  Otherwise, 64-bit tags are used.
        </Documentation>
      </IntVectorProperty>
 
@@ -2911,54 +2971,6 @@
        </Documentation>
      </StringVectorProperty>
    <!-- End spcthreader-->
-   </SourceProxy>
-      
-   <SourceProxy name="tecplotreader" class="vtkTecplotReader"
-                label="Tecplot Reader">
-     <Documentation
-       short_help="Read files in the Tecplot ASCII file format."
-       long_help="Read files in the Tecplot ASCII file format.">
-       The Tecplot reader extracts multiple zones (blocks) of data from a Tecplot ASCII file, in which a zone is stored in either point packing mode (i.e., tuple-based, with only point data supported) or block packing mode (i.e., component-based, with point data and cell data supported). The output of the reader is a vtkMultiBlockDataset, of which each block is either a vtkStructuredGrid or a vtkUnstructuredGrid. 
-     </Documentation>
-      
-     <StringVectorProperty
-        name="FileName"
-        command="SetFileName"
-        animateable="0"
-        number_of_elements="1">
-        <FileListDomain name="files"/>
-        <Documentation>
-          This property specifies the file name for the Tecplot reader.
-        </Documentation>
-     </StringVectorProperty>
-
-     <StringVectorProperty 
-        name="DataArrayInfo"
-        information_only="1">
-        <ArraySelectionInformationHelper attribute_name="Data"/>
-     </StringVectorProperty>
-
-     <StringVectorProperty
-        name="DataArrayStatus"
-        command="SetDataArrayStatus"
-        number_of_elements="0" 
-        repeat_command="1"
-        number_of_elements_per_command="2"
-        element_types="2 0"
-        information_property="DataArrayInfo"
-        label="Data Arrays">
-      
-       <ArraySelectionDomain name="array_list">
-          <RequiredProperties>
-             <Property name="DataArrayInfo" function="ArrayList"/>
-          </RequiredProperties>
-       </ArraySelectionDomain>
-       
-       <Documentation>
-         This property lists what dataset attribute arrays (point data and cell data) to read.
-       </Documentation>
-     </StringVectorProperty>
-   <!-- End tecplotreader-->
    </SourceProxy>
 
   <FileSeriesReaderProxy name="SPCTHRestartReader"
@@ -5224,7 +5236,59 @@
 
       <!-- End of CSVReader -->
    </FileSeriesReaderProxy>
+      
+   <FileSeriesReaderProxy name="TecplotReader"
+                          class="vtkFileSeriesReader"
+                          label="Tecplot Reader"
+                          file_name_method="SetFileName">
+     <Documentation
+       short_help="Read files in the Tecplot ASCII file format."
+       long_help="Read files in the Tecplot ASCII file format.">
+       The Tecplot reader extracts multiple zones (blocks) of data from a Tecplot ASCII file, in which a zone is stored in either point packing mode (i.e., tuple-based, with only point data supported) or block packing mode (i.e., component-based, with point data and cell data supported). The output of the reader is a vtkMultiBlockDataset, of which each block is either a vtkStructuredGrid or a vtkUnstructuredGrid. This supports reading a file series.
+     </Documentation>
+       
+     <StringVectorProperty
+        name="FileNames"
+        clean_command="RemoveAllFileNames"
+        command="AddFileName"
+        animateable="0"
+        number_of_elements="0" 
+        repeat_command="1"
+        information_property="FileNameInfo" >
+        <FileListDomain name="files"/>
+       <Documentation>
+           The list of files to be read by the reader.
+       </Documentation>
+     </StringVectorProperty>
+       
+     <StringVectorProperty name="FileNameInfo"
+        command="GetCurrentFileName"
+        information_only="1" >
+        <SimpleStringInformationHelper />
+     </StringVectorProperty>
+       
+     <DoubleVectorProperty 
+        name="TimestepValues"
+        repeatable="1"
+        information_only="1">
+        <TimeStepsInformationHelper/>
+        <Documentation>
+          Available timestep values.
+        </Documentation>
+     </DoubleVectorProperty>
 
+     <SubProxy>
+       <Proxy name="Reader"
+         proxygroup="internal_sources" proxyname="TecplotReaderCore">
+       </Proxy>
+       <ExposedProperties>
+          <Property name="DataArrayInfo" />
+          <Property name="DataArrayStatus" />
+       </ExposedProperties>
+     </SubProxy>
+       
+   <!-- End TecplotReader -->
+   </FileSeriesReaderProxy>
 
   </ProxyGroup>
 </ServerManagerConfiguration>
