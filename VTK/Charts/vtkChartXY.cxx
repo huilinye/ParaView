@@ -156,15 +156,6 @@ bool vtkChartXY::Paint(vtkContext2D *painter)
   float yScale = (this->YAxis->GetMaximum() - this->YAxis->GetMinimum()) /
                  (max[1] - min[1]);
 
-  // Set up the scaling for the plot area
-  float plot[4];
-  plot[0] = this->XAxis->GetMinimum() - xOrigin * xScale;
-  plot[2] = this->XAxis->GetMaximum() + this->Geometry[4] * xScale;
-  plot[1] = this->YAxis->GetMinimum() - yOrigin * yScale;
-  plot[3] = this->YAxis->GetMaximum() + this->Geometry[5] * yScale;
-  painter->GetDevice()->PushMatrix();
-  painter->GetDevice()->SetViewExtents(&plot[0]);
-
   // Clip drawing while plotting
   int clip[4];
   clip[0] = static_cast<int>(xOrigin);
@@ -172,6 +163,18 @@ bool vtkChartXY::Paint(vtkContext2D *painter)
   clip[2] = this->Geometry[0] - this->Geometry[4] - this->Geometry[2];
   clip[3] = this->Geometry[1] - this->Geometry[5] - this->Geometry[3];
   painter->GetDevice()->SetClipping(&clip[0]);
+
+  vtkTransform2D *transform = vtkTransform2D::New();
+  transform->Translate(this->Geometry[2], this->Geometry[3]);
+  // Get the scale for the plot area from the x and y axes
+  min = this->YAxis->GetPoint1();
+  max = this->YAxis->GetPoint2();
+  transform->Scale(1.0 / xScale, 1.0 / yScale);
+  transform->Translate(-this->XAxis->GetMinimum(), -this->YAxis->GetMinimum());
+
+  // Push the matrix and use the transform we just calculated
+  painter->GetDevice()->PushMatrix();
+  painter->GetDevice()->SetMatrix(transform->GetMatrix());
 
   // Now iterate through the plots
   size_t n = this->ChartPrivate->plots.size();
@@ -181,7 +184,7 @@ bool vtkChartXY::Paint(vtkContext2D *painter)
     this->ChartPrivate->plots[i]->Paint(painter);
     }
 
-  // Stop clipping and reset back to screen coordinates
+  // Stop clipping of the plot area and reset back to screen coordinates
   painter->GetDevice()->DisableClipping();
   painter->GetDevice()->PopMatrix();
 
@@ -191,16 +194,16 @@ bool vtkChartXY::Paint(vtkContext2D *painter)
   this->XAxis->Paint(painter);
   this->YAxis->Paint(painter);
 
+  transform->Delete();
+  transform = NULL;
+
   return true;
 }
 
 //-----------------------------------------------------------------------------
-void vtkChartXY::RenderPlots(vtkContext2D *painter)
+void vtkChartXY::RenderPlots(vtkContext2D *)
 {
-  // This function ensures that the correct view transforms are in place for
-  // the plot functions before calling paint on each one.
-  float x[] = { -0.1, -0.1, 10.0, 2.1 };
-  painter->GetDevice()->SetViewExtents(&x[0]);
+
 }
 
 //-----------------------------------------------------------------------------

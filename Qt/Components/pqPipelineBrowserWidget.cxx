@@ -63,8 +63,6 @@ pqPipelineBrowserWidget::pqPipelineBrowserWidget(QWidget* parentObject)
     pqApplicationCore::instance()->getServerManagerModel();
   QObject::connect(smModel, SIGNAL(serverAdded(pqServer*)),
     this->PipelineModel, SLOT(addServer(pqServer*)));
-  QObject::connect(smModel, SIGNAL(aboutToRemoveServer(pqServer *)),
-    this->PipelineModel, SLOT(startRemovingServer(pqServer *)));
   QObject::connect(smModel, SIGNAL(serverRemoved(pqServer*)),
     this->PipelineModel, SLOT(removeServer(pqServer*)));
   QObject::connect(smModel, SIGNAL(sourceAdded(pqPipelineSource*)),
@@ -79,15 +77,9 @@ pqPipelineBrowserWidget::pqPipelineBrowserWidget(QWidget* parentObject)
     SIGNAL(connectionRemoved(pqPipelineSource*, pqPipelineSource*, int)),
     this->PipelineModel,
     SLOT(removeConnection(pqPipelineSource*, pqPipelineSource*, int)));
-  QObject::connect(smModel, SIGNAL(nameChanged(pqServerManagerModelItem *)),
-    this->PipelineModel, SLOT(updateItemName(pqServerManagerModelItem *)));
 
   QObject::connect(this, SIGNAL(clicked(const QModelIndex &)),
     this, SLOT(handleIndexClicked(const QModelIndex &)));
-
-  QObject::connect(
-    this->PipelineModel, SIGNAL(rename(const QModelIndex&, const QString&)),
-    this, SLOT(renameRequest(const QModelIndex&, const QString&)));
 
   // Use the tree view's font as the base for the model's modified
   // font.
@@ -175,6 +167,14 @@ void pqPipelineBrowserWidget::handleIndexClicked(const QModelIndex &index)
         QModelIndexList indexes2;
         indexes2 << index;
         this->setVisibility(new_visibility_state, indexes2);
+        // change the selection to the item, if we just made it visible.
+        if (new_visibility_state)
+          {
+          QModelIndex itemIndex = this->PipelineModel->index(index.row(), 0,
+            index.parent());
+          this->getSelectionModel()->select(itemIndex,
+            QItemSelectionModel::ClearAndSelect);
+          }
         }
       }
     }
@@ -231,16 +231,3 @@ void pqPipelineBrowserWidget::setVisibility(bool visible,
     }
 }
 
-//----------------------------------------------------------------------------
-void pqPipelineBrowserWidget::renameRequest(const QModelIndex& index, const QString& name)
-{
-  pqPipelineSource* source = qobject_cast<pqPipelineSource*>(
-    this->PipelineModel->getItemFor(index));
-  if (source && source->getSMName() != name)
-    {
-    BEGIN_UNDO_SET(
-      QString("Rename %1 to %2").arg(source->getSMName()).arg(name));
-    source->rename(name);
-    END_UNDO_SET();
-    }
-}

@@ -1,7 +1,10 @@
+// ***************** DO NOT EDIT ***********************************
+// This is a generated file. 
+// It will be replaced next time you rebuild.
 /*=========================================================================
 
    Program: ParaView
-   Module:    $RCSfile$
+  Module:    $RCSfile$
 
    Copyright (c) 2005-2008 Sandia Corporation, Kitware Inc.
    All rights reserved.
@@ -30,50 +33,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
 
-/// \file pqPipelineBrowserContextMenu.h
-/// \date 4/20/2006
+#ifndef __pq@BPC_NAME@Initializer
+#define __pq@BPC_NAME@Initializer
 
-#ifndef _pqPipelineBrowserContextMenu_h
-#define _pqPipelineBrowserContextMenu_h
+class QMainWindow;
+class pqPVApplicationCore;
+class QSplashScreen;
 
-
-#include "pqComponentsExport.h"
-#include <QObject>
-
-class pqPipelineBrowser;
-class pqPipelineBrowserContextMenuInternal;
-class QAction;
-class QPoint;
-
-
-class PQCOMPONENTS_EXPORT pqPipelineBrowserContextMenu : public QObject
+class pq@BPC_NAME@Initializer
 {
-  Q_OBJECT
-
 public:
-  pqPipelineBrowserContextMenu(pqPipelineBrowser *browser);
-  virtual ~pqPipelineBrowserContextMenu();
+  pq@BPC_NAME@Initializer();
+  ~pq@BPC_NAME@Initializer();
 
-  enum ActionTypes
-    {
-    OPEN,
-    ADD_SOURCE,
-    ADD_FILTER,
-    CREATE_CUSTOM_FILTER,
-    CHANGE_INPUT,
-    DELETE,
-    IGNORE_TIME
-    };
-
-  // Add an action to the menu.
-  void setMenuAction(ActionTypes type, QAction *action);
-
-public slots:
-  void showContextMenu(const QPoint &pos);
-
+  /// Initialize ParaView. It returns false if the initialization failed.
+  bool Initialize(int argc, char* argv[]);
 private:
-  pqPipelineBrowserContextMenuInternal *Internal;
-  pqPipelineBrowser *Browser;
+  pqPVApplicationCore* PVApp;
+  QMainWindow* MainWindow;
+  QSplashScreen* Splash;
 };
 
 #endif
