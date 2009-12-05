@@ -14,7 +14,7 @@
   Originally written by Rudolf Marek.
 
  function:
-  last mod: $Id: cpu.c 16503 2009-08-22 18:14:02Z giles $
+  last mod: $Id$
 
  ********************************************************************/
 

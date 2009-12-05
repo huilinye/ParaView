@@ -18,19 +18,22 @@
 #include "vtkIntArray.h"
 #include "vtkObjectFactory.h"
 #include "vtkProcessModule.h"
+#include "vtkPVConfig.h"
 #include "vtkPVEnvironmentInformation.h"
-#include "vtkPVPluginLoader.h"
-#include "vtkSmartPointer.h"
-#include "vtkStringArray.h"
-#include <vtkstd/map>
-
+#include "vtkPVPlugin.h"
 #include "vtkPVPluginInformation.h"
+#include "vtkPVPluginLoader.h"
 #include "vtkPVPythonModule.h"
+#include "vtkSmartPointer.h"
 #include "vtkSMPluginProxy.h"
+#include "vtkSMPropertyHelper.h"
 #include "vtkSMProxy.h"
 #include "vtkSMProxyManager.h"
 #include "vtkSMStringVectorProperty.h"
 #include "vtkSMXMLParser.h"
+#include "vtkStringArray.h"
+
+#include <vtkstd/map>
 #include <vtkstd/set>
 #include <vtkstd/vector>
 
@@ -60,12 +63,27 @@ public:
 };
 
 //*****************************************************************************
+static void vtkSMPluginManagerImportPlugin(vtkPVPlugin* plugin, void* calldata)
+{
+  vtkPVPluginLoader* loader = vtkPVPluginLoader::New();
+  loader->Load(plugin);
+
+  vtkSMPluginManager* mgr = reinterpret_cast<vtkSMPluginManager*>(calldata);
+  mgr->ProcessPluginInfo(loader);
+  mgr->InvokeEvent(vtkSMPluginManager::LoadPluginInvoked,
+    loader->GetPluginInfo());
+  loader->Delete();
+}
+
+//*****************************************************************************
 vtkStandardNewMacro(vtkSMPluginManager);
 vtkCxxRevisionMacro(vtkSMPluginManager, "$Revision$");
 //---------------------------------------------------------------------------
 vtkSMPluginManager::vtkSMPluginManager()
 {
   this->Internal = new vtkSMPluginManagerInternals();
+  vtkPVPlugin::RegisterPluginManagerCallback(vtkSMPluginManagerImportPlugin,
+    this);
 }
 
 //---------------------------------------------------------------------------
@@ -268,15 +286,49 @@ void vtkSMPluginManager::ProcessPluginInfo(vtkSMPluginProxy* pluginProxy)
     // already processed;
     return;
     }
-  this->ProcessPluginSMXML(pluginProxy->GetServerManagerXML());  
+
+  vtkStringArray *array = vtkStringArray::New();
+  vtkSMPropertyHelper helper(pluginProxy, "ServerManagerXML");
+  array->SetNumberOfTuples(helper.GetNumberOfElements());
+  for (unsigned int cc=0; cc < helper.GetNumberOfElements(); cc++)
+    {
+    array->SetValue(cc, helper.GetAsString(cc));
+    }
+  this->ProcessPluginSMXML(array);
+  array->Delete();
   
   this->Internal->LoadedServerManagerXMLs.insert(loadedxml);  
   
-#ifdef VTK_WRAP_PYTHON
-  this->ProcessPluginPythonInfo(pluginProxy->GetPythonModuleNames(),
-                                pluginProxy->GetPythonModuleSources(),
-                                pluginProxy->GetPythonPackageFlags());
-#endif //VTK_WRAP_PYTHON
+#ifdef PARAVIEW_ENABLE_PYTHON
+  vtkStringArray* modules = vtkStringArray::New();
+  vtkSMPropertyHelper helperModules(pluginProxy, "PythonModuleNames");
+  modules->SetNumberOfTuples(helperModules.GetNumberOfElements());
+  for (unsigned int cc=0; cc < helperModules.GetNumberOfElements(); cc++)
+    {
+    modules->SetValue(cc, helperModules.GetAsString(cc));
+    }
+
+  vtkStringArray* sources = vtkStringArray::New();
+  vtkSMPropertyHelper helperSources(pluginProxy, "PythonModuleSources");
+  sources->SetNumberOfTuples(helperSources.GetNumberOfElements());
+  for (unsigned int cc=0; cc < helperSources.GetNumberOfElements(); cc++)
+    {
+    sources->SetValue(cc, helperSources.GetAsString(cc));
+    }
+
+  vtkIntArray* flags = vtkIntArray::New();
+  vtkSMPropertyHelper helperFlags(pluginProxy, "PythonPackageFlags");
+  flags->SetNumberOfTuples(helperFlags.GetNumberOfElements());
+  for (unsigned int cc=0; cc < helperFlags.GetNumberOfElements(); cc++)
+    {
+    flags->SetValue(cc, helperFlags.GetAsInt(cc));
+    }
+
+  this->ProcessPluginPythonInfo(modules, sources, flags);
+  modules->Delete();
+  sources->Delete();
+  flags->Delete();
+#endif //PARAVIEW_ENABLE_PYTHON
 }
 
 //---------------------------------------------------------------------------
@@ -298,11 +350,11 @@ void vtkSMPluginManager::ProcessPluginInfo(vtkPVPluginLoader* pluginLoader)
 
   this->Internal->LoadedServerManagerXMLs.insert(loadedxml);  
 
-#ifdef VTK_WRAP_PYTHON
+#ifdef PARAVIEW_ENABLE_PYTHON
   this->ProcessPluginPythonInfo(pluginLoader->GetPythonModuleNames(),
     pluginLoader->GetPythonModuleSources(),
     pluginLoader->GetPythonPackageFlags());
-#endif //VTK_WRAP_PYTHON
+#endif //PARAVIEW_ENABLE_PYTHON
   }
 
 //---------------------------------------------------------------------------

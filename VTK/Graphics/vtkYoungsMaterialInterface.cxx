@@ -19,32 +19,33 @@ PURPOSE.  See the above copyright notice for more information.
 // Implementation by Thierry Carrard (CEA)
 
 #include "vtkYoungsMaterialInterface.h"
+#include "vtkObjectFactory.h"
 
-#include <vtkCell.h>
-#include <vtkEmptyCell.h>
-#include <vtkPolygon.h>
-#include <vtkConvexPointSet.h>
-#include <vtkDataSet.h>
-#include <vtkMultiBlockDataSet.h>
-#include <vtkCellData.h>
-#include <vtkPointData.h>
-#include <vtkDataArray.h>
-#include <vtkUnsignedCharArray.h>
-#include <vtkIdTypeArray.h>
-#include <vtkObjectFactory.h>
-#include <vtkPoints.h>
-#include <vtkCellArray.h>
-#include <vtkInformation.h>
-#include <vtkInformationVector.h>
-#include <vtkUnstructuredGrid.h>
-#include <vtkDoubleArray.h>
-#include <vtkMath.h>
-#include <vtkIdList.h>
+#include "vtkCell.h"
+#include "vtkEmptyCell.h"
+#include "vtkPolygon.h"
+#include "vtkConvexPointSet.h"
+#include "vtkDataSet.h"
+#include "vtkMultiBlockDataSet.h"
+#include "vtkCellData.h"
+#include "vtkPointData.h"
+#include "vtkDataArray.h"
+#include "vtkUnsignedCharArray.h"
+#include "vtkIdTypeArray.h"
+#include "vtkPoints.h"
+#include "vtkCellArray.h"
+#include "vtkInformation.h"
+#include "vtkInformationVector.h"
+#include "vtkUnstructuredGrid.h"
+#include "vtkDoubleArray.h"
+#include "vtkMath.h"
+#include "vtkIdList.h"
 
 #include <vtkstd/vector>
 #include <vtkstd/string> 
 #include <vtkstd/map>
 #include <vtkstd/algorithm>
+
 #include <math.h>
 #include <assert.h>
 
@@ -57,7 +58,8 @@ class vtkYoungsMaterialInterfaceCellCut
    MAX_CELL_TETRAS = 128
       };
 
-      static void cellInterface3D( 
+
+     static void cellInterface3D( 
    
   // Inputs
    int ncoords,
@@ -111,6 +113,9 @@ class vtkYoungsMaterialInterfaceCellCut
 
 
 } ;
+
+
+
 
 class vtkYoungsMaterialInterfaceInternals
 {
@@ -1277,69 +1282,16 @@ int vtkYoungsMaterialInterface::RequestData(vtkInformation *vtkNotUsed(request),
 
 
 
+/* ------------------------------------------------------------------------------------------
+   --- Low level computations including interface placement and intersection line/polygon ---
+   ------------------------------------------------------------------------------------------ */
 
-
-
-// =====================================================================
-// === here after the low-level functions that compute placement     ===
-// === of the interface given a normal vector and a set of simplices ===
-// =====================================================================
-
-
-
-
+// here after the low-level functions that compute placement of the interface given a normal vector and a set of simplices
 namespace vtkYoungsMaterialInterfaceCellCutInternals
 {
 #define REAL_PRECISION 64 // use double precision
-#define REAL_COORD REAL3
-
-#ifndef __CUDACC__ /* compiling with host compiler (gcc, icc, etc.) */
-
-#ifndef FUNC_DECL
+#define REAL_COORD REAL3 // all coordinates are triplets
 #define FUNC_DECL static inline
-#endif
-
-#ifndef TEMPLATE_FUNC_DECL
-#define TEMPLATE_FUNC_DECL inline
-#endif
-
-#ifndef KERNEL_DECL
-#define KERNEL_DECL /* exported function */
-#endif
-
-#ifndef CONSTANT_DECL
-#define CONSTANT_DECL static const
-#endif
-
-#ifndef REAL_PRECISION
-#define REAL_PRECISION 64 /* defaults to 64 bits floating point */
-#endif
-
-#else /* compiling with cuda */
-
-#ifndef FUNC_DECL
-#define FUNC_DECL __device__
-#endif
-
-#ifndef TEMPLATE_FUNC_DECL
-#define TEMPLATE_FUNC_DECL __device__
-#endif
-
-
-#ifndef KERNEL_DECL
-#define KERNEL_DECL __global__
-#endif
-
-#ifndef CONSTANT_DECL
-#define CONSTANT_DECL __constant__
-#endif
-
-#ifndef REAL_PRECISION
-#define REAL_PRECISION 32 /* defaults to 32 bits floating point */
-#endif
-
-#endif /* __CUDACC__ */
-
 
 // par defaut, on est en double
 #ifndef REAL_PRECISION
@@ -1347,7 +1299,7 @@ namespace vtkYoungsMaterialInterfaceCellCutInternals
 #endif
 
 // float = precision la plus basse
-#if ( REAL_PRECISION <= 32 )
+#if ( REAL_PRECISION == 32 )
 
 #define REAL  float
 #define REAL2 float2
@@ -1403,6 +1355,87 @@ namespace vtkYoungsMaterialInterfaceCellCutInternals
 
 #endif
 
+
+#ifndef __CUDACC__ /* compiling with host compiler (gcc, icc, etc.) */
+
+#ifndef FUNC_DECL
+#define FUNC_DECL static inline
+#endif
+
+#ifndef KERNEL_DECL
+#define KERNEL_DECL /* exported function */
+#endif
+
+#ifndef CONSTANT_DECL
+#define CONSTANT_DECL static const
+#endif
+
+#ifndef REAL_PRECISION
+#define REAL_PRECISION 64 /* defaults to 64 bits floating point */
+#endif
+
+#else /* compiling with cuda */
+
+#ifndef FUNC_DECL
+#define FUNC_DECL __device__
+#endif
+
+#ifndef KERNEL_DECL
+#define KERNEL_DECL __global__
+#endif
+
+#ifndef CONSTANT_DECL
+#define CONSTANT_DECL __constant__
+#endif
+
+#ifndef REAL_PRECISION
+#define REAL_PRECISION 32 /* defaults to 32 bits floating point */
+#endif
+
+#endif /* __CUDACC__ */
+
+
+
+/*
+ Some of the vector functions where found in the file vector_operators.h from the NVIDIA's CUDA Toolkit.
+ Please read the above notice.
+*/
+
+/*
+ * Copyright 1993-2007 NVIDIA Corporation.  All rights reserved.
+ *
+ * NOTICE TO USER:   
+ *
+ * This source code is subject to NVIDIA ownership rights under U.S. and 
+ * international Copyright laws.  Users and possessors of this source code 
+ * are hereby granted a nonexclusive, royalty-free license to use this code 
+ * in individual and commercial software.
+ *
+ * NVIDIA MAKES NO REPRESENTATION ABOUT THE SUITABILITY OF THIS SOURCE 
+ * CODE FOR ANY PURPOSE.  IT IS PROVIDED "AS IS" WITHOUT EXPRESS OR 
+ * IMPLIED WARRANTY OF ANY KIND.  NVIDIA DISCLAIMS ALL WARRANTIES WITH 
+ * REGARD TO THIS SOURCE CODE, INCLUDING ALL IMPLIED WARRANTIES OF 
+ * MERCHANTABILITY, NONINFRINGEMENT, AND FITNESS FOR A PARTICULAR PURPOSE.
+ * IN NO EVENT SHALL NVIDIA BE LIABLE FOR ANY SPECIAL, INDIRECT, INCIDENTAL, 
+ * OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS 
+ * OF USE, DATA OR PROFITS,  WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE 
+ * OR OTHER TORTIOUS ACTION,  ARISING OUT OF OR IN CONNECTION WITH THE USE 
+ * OR PERFORMANCE OF THIS SOURCE CODE.  
+ *
+ * U.S. Government End Users.   This source code is a "commercial item" as 
+ * that term is defined at  48 C.F.R. 2.101 (OCT 1995), consisting  of 
+ * "commercial computer  software"  and "commercial computer software 
+ * documentation" as such terms are  used in 48 C.F.R. 12.212 (SEPT 1995) 
+ * and is provided to the U.S. Government only as a commercial end item.  
+ * Consistent with 48 C.F.R.12.212 and 48 C.F.R. 227.7202-1 through 
+ * 227.7202-4 (JUNE 1995), all U.S. Government End Users acquire the 
+ * source code with only those rights set forth herein. 
+ *
+ * Any use of this source code in individual and commercial software must 
+ * include, in the user documentation and internal comments to the code,
+ * the above Disclaimer and U.S. Government End Users Notice.
+ */
+
 // define base vector types and operators or use those provided by CUDA
 #ifndef __CUDACC__
 struct float2 { float x,y; };
@@ -1413,6 +1446,9 @@ struct uint3 {unsigned int x,y,z; };
 struct uint4 {unsigned int x,y,z,w; };
 struct uchar4 {unsigned char x,y,z,w; };
 struct uchar3 {unsigned char x,y,z; };
+
+#if REAL_PRECISION <= 32
+
 FUNC_DECL float2 make_float2(float x,float y)
 {
    float2 v = {x,y};
@@ -1428,8 +1464,12 @@ FUNC_DECL float4 make_float4(float x,float y,float z,float w)
    float4 v = {x,y,z,w};
    return v;
 }
-template<typename T> TEMPLATE_FUNC_DECL T min(T a, T b){ return (a<b)?a:b; }
-template<typename T> TEMPLATE_FUNC_DECL T max(T a, T b){ return (a>b)?a:b; }
+
+FUNC_DECL float min(float a, float b){ return (a<b)?a:b; }
+FUNC_DECL float max(float a, float b){ return (a>b)?a:b; }
+
+#endif /* REAL_PRECISION <= 32 */
+
 #else
 #include <vector_types.h>
 #include <vector_functions.h>
@@ -1439,6 +1479,11 @@ template<typename T> TEMPLATE_FUNC_DECL T max(T a, T b){ return (a>b)?a:b; }
 #define FUNC_DECL static inline
 #endif
 
+
+
+/* -------------------------------------------------------- */
+/* -----------  FLOAT ------------------------------------- */
+/* -------------------------------------------------------- */
 #if REAL_PRECISION <= 32
 
 FUNC_DECL  float3 operator *(float3 a, float3 b)
@@ -1594,28 +1639,52 @@ FUNC_DECL float3 cross( float3 A, float3 B)
           A.z * B.x - A.x * B.z ,
           A.x * B.y - A.y * B.x );
 }
+
 #endif /* REAL_PRECISION <= 32 */
 
-
 #ifndef __CUDACC__
+
 
 /* -------------------------------------------------------- */
 /* ----------- DOUBLE ------------------------------------- */
 /* -------------------------------------------------------- */
-#if REAL_PRECISION >= 64
+#if REAL_PRECISION == 64
 
 struct double3 { double x,y,z; };
 struct double4 { double x,y,z,w; };
 
-FUNC_DECL double2 make_double2(double x,double y)
+FUNC_DECL double min(double a, double b){ return (a<b)?a:b; }
+/* FUNC_DECL double max(double a, double b){ return (a>b)?a:b; } */
+
+FUNC_DECL double dot(double3 a, double3 b)
 {
-   double2 v = {x,y};
-   return v;
+    return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
 FUNC_DECL double3 make_double3(double x,double y,double z)
 {
    double3 v = {x,y,z};
+   return v;
+}
+
+FUNC_DECL double3 operator - (double3 a, double3 b)
+{
+    return make_double3(a.x-b.x, a.y-b.y, a.z-b.z);
+}
+
+FUNC_DECL double3 operator *(double f, double3 v)
+{
+    return make_double3(v.x*f, v.y*f, v.z*f);
+}
+
+FUNC_DECL double3 operator +(double3 a, double3 b)
+{
+    return make_double3(a.x+b.x, a.y+b.y, a.z+b.z);
+}
+
+FUNC_DECL double2 make_double2(double x,double y)
+{
+   double2 v = {x,y};
    return v;
 }
 
@@ -1625,14 +1694,10 @@ FUNC_DECL double4 make_double4(double x,double y,double z,double w)
    return v;
 }
 
+/*
 FUNC_DECL  double3 operator *(double3 a, double3 b)
 {
     return make_double3(a.x*b.x, a.y*b.y, a.z*b.z);
-}
-
-FUNC_DECL double3 operator *(double f, double3 v)
-{
-    return make_double3(v.x*f, v.y*f, v.z*f);
 }
 
 FUNC_DECL double3 operator *(double3 v, double f)
@@ -1644,12 +1709,14 @@ FUNC_DECL double2 operator *(double2 v, double f)
 {
     return make_double2(v.x*f, v.y*f);
 }
+*/
 
 FUNC_DECL double2 operator *(double f, double2 v)
 {
     return make_double2(v.x*f, v.y*f);
 }
 
+/*
 FUNC_DECL double4 operator *(double4 v, double f)
 {
     return make_double4(v.x*f, v.y*f, v.z*f, v.w*f);
@@ -1658,12 +1725,7 @@ FUNC_DECL double4 operator *(double f, double4 v)
 {
     return make_double4(v.x*f, v.y*f, v.z*f, v.w*f);
 }
-
-
-FUNC_DECL double3 operator +(double3 a, double3 b)
-{
-    return make_double3(a.x+b.x, a.y+b.y, a.z+b.z);
-}
+*/
 
 FUNC_DECL double2 operator +(double2 a, double2 b)
 {
@@ -1682,7 +1744,7 @@ FUNC_DECL void operator +=(double2 & b, double2 a)
     b.y += a.y;
 }
 
-
+/*
 FUNC_DECL void operator +=(double4 & b, double4 a)
 {
     b.x += a.x;
@@ -1690,28 +1752,25 @@ FUNC_DECL void operator +=(double4 & b, double4 a)
     b.z += a.z;
     b.w += a.w;
 }
-
-FUNC_DECL double3 operator - (double3 a, double3 b)
-{
-    return make_double3(a.x-b.x, a.y-b.y, a.z-b.z);
-}
+*/
 
 FUNC_DECL double2 operator - (double2 a, double2 b)
 {
     return make_double2(a.x-b.x, a.y-b.y);
 }
 
+/*
 FUNC_DECL void operator -= (double3 & b, double3 a)
 {
     b.x -= a.x;
     b.y -= a.y;
     b.z -= a.z;
 }
-
 FUNC_DECL double3 operator / (double3 v, double f)
 {
    return make_double3( v.x/f, v.y/f, v.z/f );
 }
+*/
 
 FUNC_DECL void operator /=(double2 & b, double f)
 {
@@ -1731,16 +1790,11 @@ FUNC_DECL double dot(double2 a, double2 b)
     return a.x * b.x + a.y * b.y ;
 }
 
-FUNC_DECL double dot(double3 a, double3 b)
-{
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
-
+/*
 FUNC_DECL double dot(double4 a, double4 b)
 {
     return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 }
-
 FUNC_DECL double clamp(double f, double a, double b)
 {
     return max(a, min(f, b));
@@ -1750,31 +1804,29 @@ FUNC_DECL double3 clamp(double3 v, double a, double b)
 {
     return make_double3(clamp(v.x, a, b), clamp(v.y, a, b), clamp(v.z, a, b));
 }
-
 FUNC_DECL double3 clamp(double3 v, double3 a, double3 b)
 {
     return make_double3(clamp(v.x, a.x, b.x), clamp(v.y, a.y, b.y), clamp(v.z, a.z, b.z));
 }
-
 FUNC_DECL double3 normalize(double3 v)
 {
     double len = sqrt(dot(v, v));
     return make_double3(v.x / len, v.y / len, v.z / len);
 }
-
 FUNC_DECL double2 normalize(double2 v)
 {
     double len = sqrt( dot(v,v) );
     return make_double2(v.x / len, v.y / len);
 }
-
+*/
 FUNC_DECL double3 cross( double3 A, double3 B)
 {
    return make_double3( A.y * B.z - A.z * B.y ,
       A.z * B.x - A.x * B.z ,
       A.x * B.y - A.y * B.x );
 }
-#endif /* REAL_PRECISION >= 64 */
+
+#endif /* REAL_PRECISION == 64 */
 
 
 
@@ -1786,6 +1838,9 @@ FUNC_DECL double3 cross( double3 A, double3 B)
 struct ldouble2 { long double x,y; };
 struct ldouble3 { long double x,y,z; };
 struct ldouble4 { long double x,y,z,w; };
+
+FUNC_DECL long double min(long double a, long double b){ return (a<b)?a:b; }
+FUNC_DECL long double max(long double a, long double b){ return (a>b)?a:b; }
 
 FUNC_DECL ldouble2 make_ldouble2(long double x,long double y)
 {
@@ -1958,6 +2013,7 @@ FUNC_DECL ldouble3 cross( ldouble3 A, ldouble3 B)
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
+
 /**************************************
 *** Precision dependant constants   ***
 ***************************************/
@@ -2040,6 +2096,8 @@ REAL triangleSurf( REAL3 p1, REAL3 p2, REAL3 p3 )
       SQRT( FABS( 4*a*c - (a-b+c)*(a-b+c) ) )
       ;
 }
+
+/*
 FUNC_DECL
 REAL triangleSurf( REAL2 p1, REAL2 p2, REAL2 p3 )
 {
@@ -2056,7 +2114,7 @@ REAL triangleSurf( REAL2 p1, REAL2 p2, REAL2 p3 )
       SQRT( FABS( 4*a*c - (a-b+c)*(a-b+c) ) )
       ;
 }
-
+*/
 
 /*************************
  *** Tetrahedra volume ***
@@ -2071,13 +2129,13 @@ REAL tetraVolume( REAL3 p0, REAL3 p1, REAL3 p2, REAL3 p3 )
    REAL3 BC = cross(B,C);
    return FABS( dot(A,BC) / REAL_CONST(6.0) );
 }
-
+/*
 FUNC_DECL
 REAL tetraVolume( const uchar4 tetra, const REAL3* vertices )
 {
    return tetraVolume( vertices[tetra.x], vertices[tetra.y], vertices[tetra.z], vertices[tetra.w] );
 }
-
+*/
 
 /*******************************************
  *** Evaluation of a polynomial function ***
@@ -2121,6 +2179,7 @@ REAL4 integratePolynomialFunc( REAL3 quadFunc )
 /*******************************************
  *** Derivative of a polynomial function ***
  *******************************************/
+/*
 FUNC_DECL
 REAL2 derivatePolynomialFunc( REAL3 F )
 {
@@ -2134,10 +2193,12 @@ REAL3 derivatePolynomialFunc( REAL4 F )
    REAL3 dF = make_REAL3( 3*F.x, 2*F.y, F.z );
    return dF;
 }
+*/
 
 /****************************
  *** Linear interpolation ***
  ****************************/
+
 FUNC_DECL
 REAL3 linearInterp( REAL t0, REAL3 x0, REAL t1, REAL3 x1, REAL t )
 {
@@ -2151,14 +2212,14 @@ REAL2 linearInterp( REAL t0, REAL2 x0, REAL t1, REAL2 x1, REAL t )
    REAL f = (t1!=t0) ? (t-t0)/(t1-t0) : REAL_CONST(0.0) ;
    return x0 + f * (x1-x0) ;
 }
-
+/*
 FUNC_DECL
 REAL linearInterp( REAL t0, REAL x0, REAL t1, REAL x1, REAL t )
 {
    REAL f = (t1!=t0) ? (t-t0)/(t1-t0) : REAL_CONST(0.0) ;
    return x0 + f * (x1-x0) ;
 }
-
+*/
 
 /****************************************
  *** Quadratic interpolation function ***
@@ -2203,6 +2264,7 @@ REAL3 quadraticInterpFunc( REAL x0, REAL y0, REAL x1, REAL y1, REAL x2, REAL y2 
 /**************************************
  *** Analytic solver for ax²+bx+c=0 ***
  **************************************/
+/*
 FUNC_DECL
 REAL quadraticFunctionSolve( REAL3 F, const REAL value, const REAL xmin, const REAL xmax )
 {
@@ -2221,16 +2283,17 @@ REAL quadraticFunctionSolve( REAL3 F, const REAL value, const REAL xmin, const R
       DBG_MESG("x2="<<x);
    }
 
-   if( F.x == REAL_CONST(0.0) ) // < EPSILON ?
+   if( F.x == REAL_CONST(0.0) )                // < EPSILON ?
    {
-      x = (F.y!=0) ? ( - F.z / F.y ) : xmin /* or nan or 0 ? */;
+      x = (F.y!=0) ? ( - F.z / F.y ) : xmin    // or nan or 0 ? ;
       DBG_MESG("xlin="<<x);
    }
 
-   x = clamp( x , xmin , xmax ); // numerical safety
+   x = clamp( x , xmin , xmax );               // numerical safety
    DBG_MESG("clamp(x)="<<x);
    return x;
 }
+*/
 
 /****************************
  *** Newton search method ***
@@ -2313,8 +2376,39 @@ REAL newtonSearchPolynomialFunc( REAL4 F,  REAL3 dF, const REAL value, const REA
 /***********************
  *** Sorting methods ***
  ***********************/
-template<typename IntType>
-TEMPLATE_FUNC_DECL
+/*
+FUNC_DECL
+uint3 sortTriangle( uint3 t , unsigned int* i )
+{
+#define SWAP(a,b) { unsigned int tmp=a; a=b; b=tmp; }
+   if( i[t.y] < i[t.x] ) SWAP(t.x,t.y);
+   if( i[t.z] < i[t.y] ) SWAP(t.y,t.z);
+   if( i[t.y] < i[t.x] ) SWAP(t.x,t.y);
+#undef SWAP
+   return t;
+}
+*/
+
+FUNC_DECL
+uchar3 sortTriangle( uchar3 t , unsigned char* i )
+{
+#define SWAP(a,b) { unsigned char tmp=a; a=b; b=tmp; }
+   if( i[t.y] < i[t.x] ) SWAP(t.x,t.y);
+   if( i[t.z] < i[t.y] ) SWAP(t.y,t.z);
+   if( i[t.y] < i[t.x] ) SWAP(t.x,t.y);
+#undef SWAP
+   return t;
+}
+
+
+
+typedef unsigned char IntType;
+
+/***********************
+ *** Sorting methods ***
+ ***********************/
+/*
+FUNC_DECL
 void sortVertices( const int n, const REAL* dist, IntType* indices )
 {
 // insertion sort : slow but symetrical across all instances
@@ -2330,31 +2424,9 @@ void sortVertices( const int n, const REAL* dist, IntType* indices )
    }
 #undef SWAP
 }
+*/
 
 FUNC_DECL
-uint3 sortTriangle( uint3 t , unsigned int* i )
-{
-#define SWAP(a,b) { unsigned int tmp=a; a=b; b=tmp; }
-   if( i[t.y] < i[t.x] ) SWAP(t.x,t.y);
-   if( i[t.z] < i[t.y] ) SWAP(t.y,t.z);
-   if( i[t.y] < i[t.x] ) SWAP(t.x,t.y);
-#undef SWAP
-   return t;
-}
-
-FUNC_DECL
-uchar3 sortTriangle( uchar3 t , unsigned char* i )
-{
-#define SWAP(a,b) { unsigned char tmp=a; a=b; b=tmp; }
-   if( i[t.y] < i[t.x] ) SWAP(t.x,t.y);
-   if( i[t.z] < i[t.y] ) SWAP(t.y,t.z);
-   if( i[t.y] < i[t.x] ) SWAP(t.x,t.y);
-#undef SWAP
-   return t;
-}
-
-template<typename IntType>
-TEMPLATE_FUNC_DECL
 void sortVertices( const int n, const REAL3* vertices, const REAL3 normal, IntType* indices )
 {
 // insertion sort : slow but symetrical across all instances
@@ -2374,8 +2446,7 @@ void sortVertices( const int n, const REAL3* vertices, const REAL3 normal, IntTy
 #undef SWAP
 }
 
-template<typename IntType>
-TEMPLATE_FUNC_DECL
+FUNC_DECL
 void sortVertices( const int n, const REAL2* vertices, const REAL2 normal, IntType* indices )
 {
 // insertion sort : slow but symetrical across all instances
@@ -2395,8 +2466,7 @@ void sortVertices( const int n, const REAL2* vertices, const REAL2 normal, IntTy
 #undef SWAP
 }
 
-template<typename IntType>
-TEMPLATE_FUNC_DECL
+FUNC_DECL
 uchar4 sortTetra( uchar4 t , IntType* i )
 {
 #define SWAP(a,b) { IntType tmp=a; a=b; b=tmp; }
@@ -2412,9 +2482,6 @@ uchar4 sortTetra( uchar4 t , IntType* i )
 
 
 
-#ifndef REAL_COORD
-#define REAL_COORD REAL3
-#endif
 
 FUNC_DECL
 REAL makeTriangleSurfaceFunctions(
@@ -2948,6 +3015,8 @@ REAL findTetraSetCuttingPlane(
    return x ;
 }
 
+
+
 typedef REAL Real;
 typedef REAL2 Real2;
 typedef REAL3 Real3;
@@ -2973,6 +3042,7 @@ struct CWVertex
 };
 
 } /* namespace vtkYoungsMaterialInterfaceCellCutInternals */
+
 
 // usefull to avoid numerical errors
 #define Clamp(x,min,max) if(x<min) x=min; else if(x>max) x=max
@@ -3322,6 +3392,7 @@ double vtkYoungsMaterialInterfaceCellCut::findTriangleSetCuttingPlane(
 
    return - d;
 }
+
 
 
 

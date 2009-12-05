@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Visualization Toolkit
-  Module:    $RCSfile: vtkOggTheoraWriter.h,v $
+  Module:    $RCSfile$
 
   Copyright (c) Michael Wild, Ken Martin, Will Schroeder, Bill Lorensen
   All rights reserved.

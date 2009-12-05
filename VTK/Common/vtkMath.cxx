@@ -277,12 +277,14 @@ void vtkMath::FreeCombination( int* r )
 }
 
 //----------------------------------------------------------------------------
-// Find unit vectors which is perpendicular to this on and to
-// each other.
-void vtkMath::Perpendiculars(const double x[3], double y[3], double z[3],
-                             double theta)
+// Given a unit vector 'x', find two other unit vectors 'y' and 'z' which
+// which form an orthonormal set.
+template<class T1, class T2, class T3>
+inline void vtkMathPerpendiculars(const T1 x[3], T2 y[3], T3 z[3],
+                                  double theta)
 {
   int dx,dy,dz;
+
   double x2 = x[0]*x[0];
   double y2 = x[1]*x[1];
   double z2 = x[2]*x[2];
@@ -290,17 +292,17 @@ void vtkMath::Perpendiculars(const double x[3], double y[3], double z[3],
 
   // transpose the vector to avoid divide-by-zero error
   if (x2 > y2 && x2 > z2)
-  {
+    {
     dx = 0; dy = 1; dz = 2;
-  }
+    }
   else if (y2 > z2) 
-  {
+    {
     dx = 1; dy = 2; dz = 0;
-  }
+    }
   else 
-  {
+    {
     dx = 2; dy = 0; dz = 1;
-  }
+    }
 
   double a = x[dx]/r;
   double b = x[dy]/r;
@@ -314,11 +316,11 @@ void vtkMath::Perpendiculars(const double x[3], double y[3], double z[3],
     double costheta = cos(theta);
 
     if (y)
-    {
+      {
       y[dx] = (c*costheta - a*b*sintheta)/tmp;
       y[dy] = sintheta*tmp;
       y[dz] = (-a*costheta - b*c*sintheta)/tmp;
-    }
+      }
 
     if (z)
       {
@@ -330,11 +332,11 @@ void vtkMath::Perpendiculars(const double x[3], double y[3], double z[3],
   else
     {
     if (y)
-    {
+      {
       y[dx] = c/tmp;
       y[dy] = 0;
       y[dz] = -a/tmp;
-    }
+      }
 
     if (z)
       {
@@ -345,73 +347,16 @@ void vtkMath::Perpendiculars(const double x[3], double y[3], double z[3],
     }      
 }
 
-//----------------------------------------------------------------------------
-// Find unit vectors which are perpendicular to this one and to
-// each other.
+void vtkMath::Perpendiculars(const double x[3], double y[3], double z[3],
+                             double theta)
+{
+  vtkMathPerpendiculars(x, y, z, theta);
+}
+
 void vtkMath::Perpendiculars(const float x[3], float y[3], float z[3],
                              double theta)
 {
-  int dx,dy,dz;
-  double x2 = x[0]*x[0];
-  double y2 = x[1]*x[1];
-  double z2 = x[2]*x[2];
-  double r = sqrt(x2 + y2 + z2);
-
-  // transpose the vector to avoid divide-by-zero error
-  if (x2 > y2 && x2 > z2)
-  {
-    dx = 0; dy = 1; dz = 2;
-  }
-  else if (y2 > z2) 
-  {
-    dx = 1; dy = 2; dz = 0;
-  }
-  else 
-  {
-    dx = 2; dy = 0; dz = 1;
-  }
-
-  double a = x[dx]/r;
-  double b = x[dy]/r;
-  double c = x[dz]/r;
-
-  double tmp = sqrt(a*a+c*c);
-
-  if (theta != 0)
-    {
-    double sintheta = sin(theta);
-    double costheta = cos(theta);
-
-    if (y)
-    {
-      y[dx] = (c*costheta - a*b*sintheta)/tmp;
-      y[dy] = sintheta*tmp;
-      y[dz] = (-a*costheta - b*c*sintheta)/tmp;
-    }
-
-    if (z)
-      {
-      z[dx] = (-c*sintheta - a*b*costheta)/tmp;
-      z[dy] = costheta*tmp;
-      z[dz] = (a*sintheta - b*c*costheta)/tmp;
-      }
-    }
-  else
-    {
-    if (y)
-    {
-      y[dx] = c/tmp;
-      y[dy] = 0;
-      y[dz] = -a/tmp;
-    }
-
-    if (z)
-      {
-      z[dx] = -a*b/tmp;
-      z[dy] = tmp;
-      z[dz] = -b*c/tmp;
-      }
-    }      
+  vtkMathPerpendiculars(x, y, z, theta);
 }
 
 #define VTK_SMALL_NUMBER 1.0e-12
@@ -1431,9 +1376,6 @@ inline void vtkSwapVectors3(T v1[3], T v2[3])
 
 //----------------------------------------------------------------------------
 // Unrolled LU factorization of a 3x3 matrix with pivoting.
-// This decomposition is non-standard in that the diagonal
-// elements are inverted, to convert a division to a multiplication
-// in the backsubstitution.
 template<class T>
 inline void vtkLUFactor3x3(T A[3][3], int index[3])
 {
@@ -1478,9 +1420,8 @@ inline void vtkLUFactor3x3(T A[3][3], int index[3])
     }
   index[0] = maxI;
 
-  A[0][0] = T(1.0)/A[0][0];
-  A[1][0] *= A[0][0];
-  A[2][0] *= A[0][0];
+  A[1][0] /= A[0][0];
+  A[2][0] /= A[0][0];
     
   // second column
   A[1][1] -= A[1][0]*A[0][1];
@@ -1494,15 +1435,13 @@ inline void vtkLUFactor3x3(T A[3][3], int index[3])
     scale[2] = scale[1];
     }
   index[1] = maxI;
-  A[1][1] = T(1.0)/A[1][1];
-  A[2][1] *= A[1][1];
+  A[2][1] /= A[1][1];
 
   // third column
   A[1][2] -= A[1][0]*A[0][2];
   A[2][2] -= A[2][0]*A[0][2] + A[2][1]*A[1][2];
   largest = scale[2]*fabs(A[2][2]);
   index[2] = 2;
-  A[2][2] = T(1.0)/A[2][2];
 }
 
 //----------------------------------------------------------------------------
@@ -1518,8 +1457,7 @@ void vtkMath::LUFactor3x3(double A[3][3], int index[3])
 }
 
 //----------------------------------------------------------------------------
-// Backsubsitution with an LU-decomposed matrix.  This is the standard
-// LU decomposition, except that the diagonals elements have been inverted.
+// Backsubstitution with an LU-decomposed matrix.
 template<class T1, class T2>
 inline void vtkLUSolve3x3(const T1 A[3][3], const int index[3], T2 x[3])
 {
@@ -1541,9 +1479,9 @@ inline void vtkLUSolve3x3(const T1 A[3][3], const int index[3], T2 x[3])
 
   // back substitution
   
-  x[2] = x[2]*A[2][2];
-  x[1] = (x[1] - A[1][2]*x[2])*A[1][1];
-  x[0] = (x[0] - A[0][1]*x[1] - A[0][2]*x[2])*A[0][0];
+  x[2] = x[2]/A[2][2];
+  x[1] = (x[1] - A[1][2]*x[2])/A[1][1];
+  x[0] = (x[0] - A[0][1]*x[1] - A[0][2]*x[2])/A[0][0];
 }  
 
 //----------------------------------------------------------------------------
@@ -1565,18 +1503,35 @@ void vtkMath::LUSolve3x3(const double A[3][3],
 template<class T1, class T2, class T3>
 inline void vtkLinearSolve3x3(const T1 A[3][3], const T2 x[3], T3 y[3])
 {
-  int index[3];
-  T3 B[3][3];
-  for (int i = 0; i < 3; i++)
-    {
-    B[i][0] = A[i][0];
-    B[i][1] = A[i][1];
-    B[i][2] = A[i][2];
-    y[i] = x[i];
-    }
+  double a1 = A[0][0]; double b1 = A[0][1]; double c1 = A[0][2];
+  double a2 = A[1][0]; double b2 = A[1][1]; double c2 = A[1][2];
+  double a3 = A[2][0]; double b3 = A[2][1]; double c3 = A[2][2];
 
-  vtkMath::LUFactor3x3(B,index);
-  vtkMath::LUSolve3x3(B,index,y);
+  // Compute the adjoint
+  double d1 =   vtkMath::Determinant2x2( b2, b3, c2, c3);
+  double d2 = - vtkMath::Determinant2x2( a2, a3, c2, c3);
+  double d3 =   vtkMath::Determinant2x2( a2, a3, b2, b3);
+
+  double e1 = - vtkMath::Determinant2x2( b1, b3, c1, c3);
+  double e2 =   vtkMath::Determinant2x2( a1, a3, c1, c3);
+  double e3 = - vtkMath::Determinant2x2( a1, a3, b1, b3);
+
+  double f1 =   vtkMath::Determinant2x2( b1, b2, c1, c2);
+  double f2 = - vtkMath::Determinant2x2( a1, a2, c1, c2);
+  double f3 =   vtkMath::Determinant2x2( a1, a2, b1, b2);
+
+  // Compute the determinant
+  double det = a1*d1 + b1*d2 + c1*d3;
+
+  // Multiply by the adjoint
+  double v1 = d1*x[0] + e1*x[1] + f1*x[2];
+  double v2 = d2*x[0] + e2*x[1] + f2*x[2];
+  double v3 = d3*x[0] + e3*x[1] + f3*x[2];
+
+  // Divide by the determinant
+  y[0] = v1/det;
+  y[1] = v2/det;
+  y[2] = v3/det;
 }
 
 //----------------------------------------------------------------------------
@@ -1720,32 +1675,38 @@ void vtkMath::Transpose3x3(const double A[3][3], double AT[3][3])
 //----------------------------------------------------------------------------
 template<class T1, class T2>
 inline void vtkInvert3x3(const T1 A[3][3], T2 AI[3][3])
-{
-  int index[3];
-  T2 tmp[3][3];
+{ 
+  double a1 = A[0][0]; double b1 = A[0][1]; double c1 = A[0][2];
+  double a2 = A[1][0]; double b2 = A[1][1]; double c2 = A[1][2];
+  double a3 = A[2][0]; double b3 = A[2][1]; double c3 = A[2][2];
 
-  for (int k = 0; k < 3; k++)
-    {
-    AI[k][0] = A[k][0];
-    AI[k][1] = A[k][1];
-    AI[k][2] = A[k][2];
-    }
-  // invert one column at a time
-  vtkMath::LUFactor3x3(AI,index);
-  for (int i = 0; i < 3; i++)
-    {
-    T2 *x = tmp[i];
-    x[0] = x[1] = x[2] = 0.0;
-    x[i] = 1.0;
-    vtkMath::LUSolve3x3(AI,index,x);
-    }
-  for (int j = 0; j < 3; j++)
-    {
-    T2 *x = tmp[j];
-    AI[0][j] = x[0];
-    AI[1][j] = x[1];
-    AI[2][j] = x[2];      
-    }
+  // Compute the adjoint
+  double d1 =   vtkMath::Determinant2x2( b2, b3, c2, c3);
+  double d2 = - vtkMath::Determinant2x2( a2, a3, c2, c3);
+  double d3 =   vtkMath::Determinant2x2( a2, a3, b2, b3);
+
+  double e1 = - vtkMath::Determinant2x2( b1, b3, c1, c3);
+  double e2 =   vtkMath::Determinant2x2( a1, a3, c1, c3);
+  double e3 = - vtkMath::Determinant2x2( a1, a3, b1, b3);
+
+  double f1 =   vtkMath::Determinant2x2( b1, b2, c1, c2);
+  double f2 = - vtkMath::Determinant2x2( a1, a2, c1, c2);
+  double f3 =   vtkMath::Determinant2x2( a1, a2, b1, b2);
+
+  // Divide by the determinant
+  double det = a1*d1 + b1*d2 + c1*d3;
+
+  AI[0][0]  = d1/det;
+  AI[1][0]  = d2/det;
+  AI[2][0]  = d3/det;
+
+  AI[0][1]  = e1/det;
+  AI[1][1]  = e2/det;
+  AI[2][1]  = e3/det;
+
+  AI[0][2]  = f1/det;
+  AI[1][2]  = f2/det;
+  AI[2][2]  = f3/det;
 }
 
 //----------------------------------------------------------------------------
@@ -1906,36 +1867,35 @@ inline void vtkOrthogonalize3x3(const T1 A[3][3], T2 B[3][3])
   // Pivot the matrix to improve accuracy
   T2 scale[3];
   int index[3];
-  T2 tmp, largest;
+  T2 largest;
 
   // Loop over rows to get implicit scaling information
   for (i = 0; i < 3; i++)
     {
-    largest = fabs(B[i][0]);
-    if ((tmp = fabs(B[i][1])) > largest)
-      {
-      largest = tmp;
-      }
-    if ((tmp = fabs(B[i][2])) > largest)
-      {
-      largest = tmp;
-      }
-    scale[i] = 1.0;
+    T2 x1 = fabs(B[i][0]);
+    T2 x2 = fabs(B[i][1]);
+    T2 x3 = fabs(B[i][2]);
+    largest = (x2 > x1 ? x2 : x1);
+    largest = (x3 > largest ? x3 : largest);
+    scale[i] = 1;
     if (largest != 0)
       {
-      scale[i] = T2(1.0)/largest;
+      scale[i] /= largest;
       }
     }
 
   // first column
+  T2 x1 = fabs(B[0][0])*scale[0];
+  T2 x2 = fabs(B[1][0])*scale[1];
+  T2 x3 = fabs(B[2][0])*scale[2];
   index[0] = 0;
-  largest = scale[0]*fabs(B[0][0]);
-  if ((tmp = scale[1]*fabs(B[1][0])) >= largest) 
+  largest = x1;
+  if (x2 >= largest) 
     {
-    largest = tmp;
+    largest = x2;
     index[0] = 1;
     }
-  if ((tmp = scale[2]*fabs(B[2][0])) >= largest) 
+  if (x3 >= largest) 
     {
     index[0] = 2;
     }
@@ -1946,9 +1906,11 @@ inline void vtkOrthogonalize3x3(const T1 A[3][3], T2 B[3][3])
     }
 
   // second column
+  T2 y2 = fabs(B[1][1])*scale[1];
+  T2 y3 = fabs(B[2][1])*scale[2];
   index[1] = 1;
-  largest = scale[1]*fabs(B[1][1]);
-  if ((tmp = scale[2]*fabs(B[2][1])) >= largest) 
+  largest = y2;
+  if (y3 >= largest) 
     {
     index[1] = 2;
     vtkSwapVectors3(B[2],B[1]);
@@ -1957,12 +1919,13 @@ inline void vtkOrthogonalize3x3(const T1 A[3][3], T2 B[3][3])
   // third column
   index[2] = 2;
 
-  // A quaternian can only describe a pure rotation, not
+  // A quaternion can only describe a pure rotation, not
   // a rotation with a flip, therefore the flip must be
   // removed before the matrix is converted to a quaternion.
-  T2 d = vtkDeterminant3x3(B);
-  if (d < 0)
+  int flip = 0;
+  if (vtkDeterminant3x3(B) < 0)
     {
+    flip = 1;
     for (i = 0; i < 3; i++)
       {
       B[0][i] = -B[0][i];
@@ -1980,7 +1943,7 @@ inline void vtkOrthogonalize3x3(const T1 A[3][3], T2 B[3][3])
   vtkMath::QuaternionToMatrix3x3(quat,B);
 
   // Put the flip back into the orthogonalized matrix.
-  if (d < 0)
+  if (flip)
     {
     for (i = 0; i < 3; i++)
       {

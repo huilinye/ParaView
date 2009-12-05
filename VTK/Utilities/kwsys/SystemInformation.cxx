@@ -128,10 +128,10 @@ public:
   bool DoesCPUSupportCPUID();
 
   // Retrieve memory information in megabyte.
-  unsigned long GetTotalVirtualMemory();
-  unsigned long GetAvailableVirtualMemory();
-  unsigned long GetTotalPhysicalMemory();
-  unsigned long GetAvailablePhysicalMemory();  
+  size_t GetTotalVirtualMemory();
+  size_t GetAvailableVirtualMemory();
+  size_t GetTotalPhysicalMemory();
+  size_t GetAvailablePhysicalMemory();  
 
   /** Run the different checks */
   void RunCPUCheck();
@@ -257,10 +257,10 @@ protected:
 
   // Evaluate the memory information.
   int QueryMemory();
-  unsigned long TotalVirtualMemory;
-  unsigned long AvailableVirtualMemory;
-  unsigned long TotalPhysicalMemory;
-  unsigned long AvailablePhysicalMemory;
+  size_t TotalVirtualMemory;
+  size_t AvailableVirtualMemory;
+  size_t TotalPhysicalMemory;
+  size_t AvailablePhysicalMemory;
 
   size_t CurrentPositionInFile;
 
@@ -385,20 +385,20 @@ bool SystemInformation::DoesCPUSupportCPUID()
 }
 
 // Retrieve memory information in megabyte.
-unsigned long SystemInformation::GetTotalVirtualMemory()
+size_t SystemInformation::GetTotalVirtualMemory()
 {
   return this->Implementation->GetTotalVirtualMemory();
 }
-unsigned long SystemInformation::GetAvailableVirtualMemory()
+size_t SystemInformation::GetAvailableVirtualMemory()
 {
   return this->Implementation->GetAvailableVirtualMemory();
 }
-unsigned long SystemInformation::GetTotalPhysicalMemory()
+size_t SystemInformation::GetTotalPhysicalMemory()
 {
   return this->Implementation->GetTotalPhysicalMemory();
 }
 
-unsigned long SystemInformation::GetAvailablePhysicalMemory()
+size_t SystemInformation::GetAvailablePhysicalMemory()
 {
   return this->Implementation->GetAvailablePhysicalMemory();
 }
@@ -2279,11 +2279,16 @@ int SystemInformationImplementation::QueryMemory()
 #elif _WIN32
 #if  _MSC_VER < 1300
   MEMORYSTATUS ms;
+  ms.dwLength = sizeof(ms);
   GlobalMemoryStatus(&ms);
 #define MEM_VAL(value) dw##value
 #else
   MEMORYSTATUSEX ms;
-  GlobalMemoryStatusEx(&ms);
+  ms.dwLength = sizeof(ms);
+  if (0 == GlobalMemoryStatusEx(&ms))
+  {
+    return 0;
+  }
 #define MEM_VAL(value) ull##value
 #endif
   unsigned long tv = ms.MEM_VAL(TotalVirtual);
@@ -2446,24 +2451,24 @@ int SystemInformationImplementation::QueryMemory()
 }
 
 /** */
-unsigned long SystemInformationImplementation::GetTotalVirtualMemory() 
+size_t SystemInformationImplementation::GetTotalVirtualMemory() 
 { 
   return this->TotalVirtualMemory; 
 }
 
 /** */
-unsigned long SystemInformationImplementation::GetAvailableVirtualMemory() 
+size_t SystemInformationImplementation::GetAvailableVirtualMemory() 
 { 
   return this->AvailableVirtualMemory; 
 }
 
-unsigned long SystemInformationImplementation::GetTotalPhysicalMemory() 
+size_t SystemInformationImplementation::GetTotalPhysicalMemory() 
 { 
   return this->TotalPhysicalMemory; 
 }
 
 /** */
-unsigned long SystemInformationImplementation::GetAvailablePhysicalMemory() 
+size_t SystemInformationImplementation::GetAvailablePhysicalMemory() 
 { 
   return this->AvailablePhysicalMemory; 
 }
@@ -2771,7 +2776,7 @@ bool SystemInformationImplementation::ParseSysCtl()
   uint64_t value = 0;
   size_t len = sizeof(value);
   sysctlbyname("hw.memsize", &value, &len, NULL, 0);
-  this->TotalPhysicalMemory = value/1048576;
+  this->TotalPhysicalMemory = static_cast< size_t >( value/1048576 );
 
   // Parse values for Mac
   this->AvailablePhysicalMemory = 0;
@@ -2782,7 +2787,7 @@ bool SystemInformationImplementation::ParseSysCtl()
     {
     err = sysctlbyname("hw.pagesize", &value, &len, NULL, 0);
     int64_t available_memory = vmstat.free_count * value;
-    this->AvailablePhysicalMemory = available_memory / 1048576;
+    this->AvailablePhysicalMemory = static_cast< size_t >( available_memory / 1048576 );
     }
 
 #ifdef VM_SWAPUSAGE
@@ -2794,8 +2799,8 @@ bool SystemInformationImplementation::ParseSysCtl()
   err = sysctl(mib, miblen, &swap, &len, NULL, 0);
   if (err == 0)
     {
-    this->AvailableVirtualMemory = swap.xsu_avail/1048576;
-    this->TotalVirtualMemory = swap.xsu_total/1048576;
+    this->AvailableVirtualMemory = static_cast< size_t >( swap.xsu_avail/1048576 );
+    this->TotalVirtualMemory = static_cast< size_t >( swap.xsu_total/1048576 );
     }
 #else
    this->AvailableVirtualMemory = 0;
@@ -2811,7 +2816,7 @@ bool SystemInformationImplementation::ParseSysCtl()
 
   len = sizeof(value);
   sysctlbyname("hw.cpufrequency", &value, &len, NULL, 0);
-  this->CPUSpeedInMHz = value / 1048576;
+  this->CPUSpeedInMHz = static_cast< float >( value )/ 1048576;
 
 
   // Chip family
@@ -2859,14 +2864,14 @@ bool SystemInformationImplementation::ParseSysCtl()
     // Chip Model
     len = sizeof(value);
     err = sysctlbyname("machdep.cpu.model", &value, &len, NULL, 0);
-    this->ChipID.Model = value;
+    this->ChipID.Model = static_cast< int >( value );
     }
   // Cache size
   len = sizeof(value);
   err = sysctlbyname("hw.l1icachesize", &value, &len, NULL, 0);
-  this->Features.L1CacheSize = value;
+  this->Features.L1CacheSize = static_cast< int >( value );
   err = sysctlbyname("hw.l2cachesize", &value, &len, NULL, 0);
-  this->Features.L2CacheSize = value;
+  this->Features.L2CacheSize = static_cast< int >( value );
   
   return true;
 #else

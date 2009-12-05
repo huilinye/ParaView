@@ -8,6 +8,7 @@ IF(NOT ParaView_BINARY_DIR)
   INCLUDE(${PARAVIEW_USE_FILE})
 
   SUBDIRS(Plugins)
+  SUBDIRS(CustomApplications)
 
 ELSE(NOT ParaView_BINARY_DIR)
 
@@ -65,7 +66,7 @@ ELSE(NOT ParaView_BINARY_DIR)
 
   ADD_DEPENDENCIES(ParaViewExamplesTarget vtkPVFiltersCS)
   IF(PARAVIEW_BUILD_QT_GUI)
-    ADD_DEPENDENCIES(ParaViewExamplesTarget pqComponents)
+    ADD_DEPENDENCIES(ParaViewExamplesTarget pqComponents pqApplicationComponents)
   ENDIF(PARAVIEW_BUILD_QT_GUI)
 
 ENDIF(NOT ParaView_BINARY_DIR)

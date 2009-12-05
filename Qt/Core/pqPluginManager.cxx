@@ -47,15 +47,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vtkProcessModule.h"
 #include "vtkPVEnvironmentInformation.h"
 #include "vtkPVEnvironmentInformationHelper.h"
+#include "vtkPVGUIPluginInterface.h"
+#include "vtkPVPlugin.h"
 #include "vtkPVPluginInformation.h"
 #include "vtkPVPluginLoader.h"
 #include "vtkPVPythonModule.h"
-#include "vtkStringArray.h"
 #include "vtkSMApplication.h"
 #include "vtkSMObject.h"
 #include "vtkSMPluginManager.h"
-#include "vtkSMProxyManager.h"
 #include "vtkSMProxy.h"
+#include "vtkSMProxyManager.h"
+#include "vtkStringArray.h"
 #include "vtkToolkits.h"
 
 #include "vtksys/SystemTools.hxx"
@@ -67,7 +69,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqAutoStartInterface.h"
 #include "pqFileDialogModel.h"
 #include "pqObjectBuilder.h"
-#include "pqPlugin.h"
 #include "pqServer.h"
 #include "pqServerManagerModel.h"
 #include "pqSettings.h"
@@ -124,6 +125,17 @@ public:
   bool NeedUpdatePluginInfo;
 };
 
+static void pqPluginManagerImportPlugin(vtkPVPlugin* plugin, void* calldata)
+{
+  vtkPVGUIPluginInterface* interface =
+    dynamic_cast<vtkPVGUIPluginInterface*>(plugin);
+  pqPluginManager* mgr = reinterpret_cast<pqPluginManager*>(calldata);
+  if (interface && mgr)
+    {
+    mgr->loadGUIPlugin(interface);
+    }
+}
+
 //-----------------------------------------------------------------------------
 pqPluginManager::pqPluginManager(QObject* p)
   : QObject(p)
@@ -144,7 +156,9 @@ pqPluginManager::pqPluginManager(QObject* p)
   QObject::connect(pqApplicationCore::instance()->getServerManagerModel(), 
     SIGNAL(serverRemoved(pqServer*)),
     this, SLOT(onServerDisconnected(pqServer*)));
-  
+ 
+  vtkPVPlugin::RegisterPluginManagerCallback(::pqPluginManagerImportPlugin,
+    this);
 //  this->addPluginFromSettings();
 }
 
@@ -241,25 +255,19 @@ pqPluginManager::LoadStatus pqPluginManager::loadClientExtension(
   else
     {
     QPluginLoader qplugin(lib);
-    if(qplugin.load())
+    if (qplugin.load())
       {
       QObject* pqpluginObject = qplugin.instance();
-      pqPlugin* pqplugin = qobject_cast<pqPlugin*>(pqpluginObject);
-      if(pqplugin)
+      vtkPVGUIPluginInterface* plugin =
+        dynamic_cast<vtkPVGUIPluginInterface*>(pqpluginObject);
+      if (plugin)
         {
-        pqpluginObject->setParent(this);  // take ownership to clean up later
         success = LOADED;
-//        pluginInfo->SetFileName(lib.toAscii().constData());
+        pluginInfo->SetFileName(lib.toAscii().constData());
         pluginInfo->SetLoaded(1);
         this->addExtension(NULL, pluginInfo);
         emit this->guiExtensionLoaded();
-        QObjectList ifaces = pqplugin->interfaces();
-        foreach(QObject* iface, ifaces)
-          {
-          this->Internal->Interfaces.append(iface);
-          this->handleAutoStartPlugins(iface, true);
-          emit this->guiInterfaceLoaded(iface);
-          }
+        this->loadGUIPlugin(plugin);
         }
       else
         {
@@ -287,6 +295,21 @@ pqPluginManager::LoadStatus pqPluginManager::loadClientExtension(
     }
 
   return success;
+}
+
+//-----------------------------------------------------------------------------
+void pqPluginManager::loadGUIPlugin(vtkPVGUIPluginInterface* plugin)
+{
+  if (plugin)
+    {
+    QObjectList ifaces = plugin->interfaces();
+    foreach(QObject* iface, ifaces)
+      {
+      this->Internal->Interfaces.append(iface);
+      this->handleAutoStartPlugins(iface, true);
+      emit this->guiInterfaceLoaded(iface);
+      }
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -510,14 +533,6 @@ void pqPluginManager::handleAutoStartPlugins(QObject* iface, bool startup)
 //-----------------------------------------------------------------------------
 QStringList pqPluginManager::pluginPaths(pqServer* server)
 {
-  if (vtksys::SystemTools::GetEnv("DASHBOARD_TEST_FROM_CTEST"))
-    {
-    cout << 
-      "Ignoring plugin paths since the application is being run on the dashboard"
-      << endl;
-    return QStringList();
-    }
-
   QString pv_plugin_path;
 
   if(!server || !this->Internal->IsCurrentServerRemote)
@@ -605,6 +620,14 @@ QStringList pqPluginManager::pluginPaths(pqServer* server)
       }
     }
 
+  if (vtksys::SystemTools::GetEnv("DASHBOARD_TEST_FROM_CTEST"))
+    {
+    cout << 
+      "Ignoring plugin paths since the application is being run on the dashboard"
+      << endl;
+    return QStringList();
+    }
+
   QStringList plugin_paths = pv_plugin_path.split(';', QString::SkipEmptyParts);
   return plugin_paths;
 }
@@ -665,7 +688,7 @@ vtkPVPluginInformation* pqPluginManager::getExistingExtensionByFileName(
 vtkPVPluginInformation* pqPluginManager::getExistingExtensionByPluginName(
   pqServer* server, const QString& name)
 {
-  return this->getExistingExtensionByFileName(this->getServerURIKey(server), name);
+  return this->getExistingExtensionByPluginName(this->getServerURIKey(server), name);
 }
 
 //-----------------------------------------------------------------------------
@@ -891,5 +914,6 @@ bool pqPluginManager::isPluginFuntional(
     plInfo->SetError("Missing required plugins!");
     return false;
     }
+  plInfo->SetError(NULL);
   return true;    
 }

@@ -10,7 +10,7 @@
  *                                                                  *
  ********************************************************************/
 /*SSE2 fDCT implementation for x86_64.*/
-/*$Id: fdct_ses2.c 14579 2008-03-12 06:42:40Z xiphmont $*/
+/*$Id$*/
 #include <stddef.h>
 #include "x86enc.h"
 

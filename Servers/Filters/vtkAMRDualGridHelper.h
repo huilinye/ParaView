@@ -23,7 +23,7 @@
 #define __vtkAMRDualGridHelper_h
 
 #include "vtkObject.h"
-#include "vtkstd/vector"
+#include <vtkstd/vector>
 
 class vtkHierarchicalBoxDataSet;
 class vtkAMRDualGridHelperBlock;
@@ -51,7 +51,7 @@ public:
   const double*             GetGlobalOrigin() { return this->GlobalOrigin;}
   const double*             GetRootSpacing() { return this->RootSpacing;}
   int                       GetNumberOfBlocks() { return this->NumberOfBlocksInThisProcess;}
-  int                       GetNumberOfLevels() { return this->Levels.size();}
+  int                       GetNumberOfLevels() { return (int)(this->Levels.size());}
   int                       GetNumberOfBlocksInLevel(int level);
   vtkAMRDualGridHelperBlock* GetBlock(int level, int blockIdx);
 

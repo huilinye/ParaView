@@ -29,13 +29,14 @@ SET(MyTests
   TestOrientationMarkerWidget.cxx
 #  TestPlaybackWidget.cxx
 #  TestRectilinearWipeWidget.cxx
-#  TestSeedWidget.cxx
+  TestSeedWidget.cxx
   TestSliderWidget.cxx
   TestSliderWidget2D.cxx
 #  TestTextWidget.cxx
   TerrainPolylineEditor.cxx
   TestDijkstraGraphGeodesicPath.cxx
   TestParallelopipedWidget.cxx
+  TestSeedWidgetNonUniformRepresentations.cxx
   )
 
 IF (VTK_DATA_ROOT)
@@ -47,6 +48,7 @@ IF (VTK_DATA_ROOT)
 #    TestConstrainedHandleWidget.cxx
     TestSurfaceConstrainedHandleWidget.cxx
     TestPolygonalRepresentationHandleWidget.cxx
+    TestPolygonalHandleRepresentations.cxx
     TestSphereHandleWidget.cxx
 #    TestFocalPlaneContour.cxx
 #    TestOrientedGlyphContour.cxx

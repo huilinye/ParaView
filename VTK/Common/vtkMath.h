@@ -216,6 +216,50 @@ public:
   static double Gaussian( double mean, double std );
 
   // Description:
+  // Addition of two 3-vectors (float version). Result is stored in c.
+  static void Add(const float a[3], const float b[3], float c[3]) {
+    for (int i = 0; i < 3; ++i)
+      c[i] = a[i] + b[i];
+  }
+
+  // Description:
+  // Addition of two 3-vectors (double version). Result is stored in c.
+  static void Add(const double a[3], const double b[3], double c[3]) {
+    for (int i = 0; i < 3; ++i)
+      c[i] = a[i] + b[i];
+  }
+
+  // Description:
+  // Subtraction of two 3-vectors (float version). Result is stored in c.
+  static void Subtract(const float a[3], const float b[3], float c[3]) {
+    for (int i = 0; i < 3; ++i)
+      c[i] = a[i] - b[i];
+  }
+
+  // Description:
+  // Subtraction of two 3-vectors (double version). Result is stored in c.
+  static void Subtract(const double a[3], const double b[3], double c[3]) {
+    for (int i = 0; i < 3; ++i)
+      c[i] = a[i] - b[i];
+  }
+
+  // Description:
+  // Multiplies a 3-vector by a scalar (float version).
+  // This modifies the input 3-vector.
+  static void MultiplyScalar(float a[3], float s) {
+    for (int i = 0; i < 3; ++i)
+      a[i] *= s;
+  }
+
+  // Description:
+  // Multiplies a 3-vector by a scalar (double version).
+  // This modifies the input 3-vector.
+  static void MultiplyScalar(double a[3], double s) {
+    for (int i = 0; i < 3; ++i)
+      a[i] *= s;
+  }
+
+  // Description:
   // Dot product of two 3-vectors (float version).
   static float Dot(const float x[3], const float y[3]) {
     return ( x[0] * y[0] + x[1] * y[1] + x[2] * y[2] );};
@@ -362,14 +406,12 @@ public:
     return (c1[0] * c2[1] - c2[0] * c1[1] );};
 
   // Description:
-  // LU Factorization of a 3x3 matrix.  The diagonal elements are the
-  // multiplicative inverse of those in the standard LU factorization.
+  // LU Factorization of a 3x3 matrix.
   static void LUFactor3x3(float A[3][3], int index[3]);
   static void LUFactor3x3(double A[3][3], int index[3]);
 
   // Description:
-  // LU back substitution for a 3x3 matrix.  The diagonal elements are the
-  // multiplicative inverse of those in the standard LU factorization.
+  // LU back substitution for a 3x3 matrix.
   static void LUSolve3x3(const float A[3][3], const int index[3], 
                          float x[3]);
   static void LUSolve3x3(const double A[3][3], const int index[3], 

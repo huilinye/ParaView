@@ -15,6 +15,7 @@ CREATE_TEST_SOURCELIST(Tests ${KIT}CxxTests.cxx
   TestDirectory.cxx
   TestFastNumericConversion.cxx
   TestMath.cxx
+  TestMatrix3x3.cxx
   TestMinimalStandardRandomSequence.cxx
   TestPolynomialSolversUnivariate.cxx
   TestSmartPointer.cxx
@@ -81,6 +82,7 @@ IF(VTK_USE_N_WAY_ARRAYS)
     ArrayInterpolationDense.cxx
     ArrayNullValues.cxx
     ArraySlice.cxx
+    ArrayUserTypes.cxx
     ArrayVariants.cxx
     SparseArrayValidation.cxx
     EXTRA_INCLUDE vtkTestDriver.h

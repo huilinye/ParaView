@@ -3,13 +3,30 @@ IF(PYTHON_EXECUTABLE AND VTK_HEADER_TESTING_PY)
   FOREACH(part Common Filters ServerManager)
     ADD_TEST(HeaderTesting-PVServer-${part} ${PYTHON_EXECUTABLE}
       ${VTK_HEADER_TESTING_PY}
-      "${PVServer_SOURCE_DIR}/${part}" 
+      "${PVServer_SOURCE_DIR}/${part}"
+      vtkAMRDualContour.h
+      vtkAMRDualGridHelper.h
+      vtkCTHFragmentCommBuffer.h
+      vtkCTHFragmentIdList.h
+      vtkCTHFragmentIdListItem.h
+      vtkCTHFragmentPieceLoading.h
+      vtkCTHFragmentPieceTransaction.h
+      vtkCTHFragmentPieceTransactionMatrix.h
+      vtkCTHFragmentProcessLoading.h
+      vtkCTHFragmentProcessRing.h
+      vtkCTHFragmentToProcMap.h
       vtkIceTConstants.h
+      vtkInitializationHelper.h
       vtkMemberFunctionCommand.h
+      vtkPriorityHelper.h
       vtkProcessModuleConnectionManagerInternals.h
+      vtkPVPlugin.h
+      vtkPVPythonPluginInterace.h
+      vtkPVServerManagerPluginInterface.h
       vtkPVServerOptionsInternals.h
       vtkPVTestUtities.h
       vtkSciVizStatisticsPrivate.h
+      vtkSMPropertyHelper.h
       vtkSMPropertyInternals.h
       vtkSMPropertyInternals.h
       vtkSMProxyInternals.h
@@ -21,17 +38,7 @@ IF(PYTHON_EXECUTABLE AND VTK_HEADER_TESTING_PY)
       vtkSpyPlotReaderMap.h
       vtkSpyPlotUniReader.h
       vtkUndoStackInternal.h
-      vtkSMPropertyHelper.h
-      vtkInitializationHelper.h
-      vtkCTHFragmentCommBuffer.h
-      vtkCTHFragmentIdList.h
-      vtkCTHFragmentIdListItem.h
-      vtkCTHFragmentPieceLoading.h
-      vtkCTHFragmentPieceTransaction.h
-      vtkCTHFragmentPieceTransactionMatrix.h
-      vtkCTHFragmentProcessLoading.h
-      vtkCTHFragmentProcessRing.h
-      vtkCTHFragmentToProcMap.h)
+      )
   ENDFOREACH(part)
 ENDIF(PYTHON_EXECUTABLE AND VTK_HEADER_TESTING_PY)
 

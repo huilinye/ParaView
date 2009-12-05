@@ -1,7 +1,7 @@
 /*=========================================================================
 
   Program:   Visualization Toolkit
-  Module:    $RCSfile: vtkOggTheoraWriter.cxx,v $
+  Module:    $RCSfile$
 
   Copyright (c) Michael Wild, Ken Martin, Will Schroeder, Bill Lorensen
   All rights reserved.
@@ -475,7 +475,7 @@ void vtkOggTheoraWriterInternal::RGB2YCbCr(vtkImageData *id,
 
 //---------------------------------------------------------------------------
 vtkStandardNewMacro(vtkOggTheoraWriter);
-vtkCxxRevisionMacro(vtkOggTheoraWriter, "$Revision:$");
+vtkCxxRevisionMacro(vtkOggTheoraWriter, "$Revision$");
 
 //---------------------------------------------------------------------------
 vtkOggTheoraWriter::vtkOggTheoraWriter()

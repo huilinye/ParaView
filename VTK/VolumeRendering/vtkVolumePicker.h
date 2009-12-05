@@ -1,0 +1,82 @@
+/*=========================================================================
+
+  Program:   Visualization Toolkit
+  Module:    $RCSfile$
+
+  Copyright (c) Ken Martin, Will Schroeder, Bill Lorensen
+  All rights reserved.
+  See Copyright.txt or http://www.kitware.com/Copyright.htm for details.
+
+     This software is distributed WITHOUT ANY WARRANTY; without even
+     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+     PURPOSE.  See the above copyright notice for more information.
+
+=========================================================================*/
+// .NAME vtkVolumePicker - ray-cast picker enhanced for volumes
+// .SECTION Description
+// vtkVolumePicker is a subclass of vtkSurfacePicker.  It has one
+// advantage over vtkSurfacePicker for volumes: it will be able to
+// correctly perform picking when CroppingPlanes are present.  This
+// isn't possible for vtkSurfacePicker since it doesn't link to
+// the VolumeRendering classes and hence cannot access information
+// about the CroppingPlanes.
+//
+// .SECTION See Also
+// vtkPicker vtkPointPicker vtkCellPicker
+//
+// .SECTION Thanks
+// This class was contributed to VTK by David Gobbi on behalf of Atamai Inc.
+
+#ifndef __vtkVolumePicker_h
+#define __vtkVolumePicker_h
+
+#include "vtkSurfacePicker.h"
+
+class VTK_VOLUMERENDERING_EXPORT vtkVolumePicker : public vtkSurfacePicker
+{
+public:
+  static vtkVolumePicker *New();
+  vtkTypeRevisionMacro(vtkVolumePicker, vtkSurfacePicker);
+  void PrintSelf(ostream& os, vtkIndent indent);
+
+  // Description:
+  // Set whether to pick the cropping planes of props that have them.
+  // If this is set, then the pick will be done on the cropping planes
+  // rather than on the data. The GetCroppingPlaneId() method will return
+  // the index of the cropping plane of the volume that was picked.  This
+  // setting is only relevant to the picking of volumes.
+  vtkSetMacro(PickCroppingPlanes, int);
+  vtkBooleanMacro(PickCroppingPlanes, int);
+  vtkGetMacro(PickCroppingPlanes, int);
+
+  // Description:
+  // Get the index of the cropping plane that the pick ray passed
+  // through on its way to the prop. This will be set regardless
+  // of whether PickCroppingPlanes is on.  The crop planes are ordered
+  // as follows: xmin, xmax, ymin, ymax, zmin, zmax.  If the volume is
+  // not cropped, the value will bet set to -1.
+  vtkGetMacro(CroppingPlaneId, int);
+
+protected:
+  vtkVolumePicker();
+  ~vtkVolumePicker();
+
+  void Initialize();
+
+  virtual double IntersectVolumeWithLine(const double p1[3],
+                                         const double p2[3],
+                                         double t1, double t2,
+                                         vtkVolume *volume, 
+                                         vtkAbstractVolumeMapper *mapper);
+
+  int PickCroppingPlanes;
+  int CroppingPlaneId;
+
+private:
+  vtkVolumePicker(const vtkVolumePicker&);  // Not implemented.
+  void operator=(const vtkVolumePicker&);  // Not implemented.
+};
+
+#endif
+
+

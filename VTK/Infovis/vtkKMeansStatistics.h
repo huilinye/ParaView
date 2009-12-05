@@ -23,59 +23,67 @@ PURPOSE.  See the above copyright notice for more information.
 // This class takes as input an optional vtkTable on port LEARN_PARAMETERS 
 // specifying initial  set(s) of cluster values of the following form:  
 // <pre>
-//           K     | Col1               |  ...    | ColN    
-//      -----------+--------------------+---------+---------------
-//           M     |clustCoord(1, 1, 1) |  ...    | clustCoord(1, 1, N)
-//           M     |clustCoord(1, 2, 1) |  ...    | clustCoord(1, 2, N)
-//           .     |       .            |   .     |        .
-//           .     |       .            |   .     |        .
-//           .     |       .            |   .     |        .
-//           M     |clustCoord(1, M, 1) |  ...    | clustCoord(1, M, N)
-//           L     |clustCoord(1, 1, 1) |  ...    | clustCoord(0, 1, N)
-//           L     |clustCoord(1, 2, 1) |  ...    | clustCoord(0, 2, N)
-//           .     |       .            |   .     |        .
-//           .     |       .            |   .     |        .
-//           .     |       .            |   .     |        .
-//           L     |clustCoord(1, L, 1) |  ...    | clustCoord(1, L, N)
+//           K     | Col1            |  ...    | ColN    
+//      -----------+-----------------+---------+---------------
+//           M     |clustCoord(1, 1) |  ...    | clustCoord(1, N)
+//           M     |clustCoord(2, 1) |  ...    | clustCoord(2, N)
+//           .     |       .         |   .     |        .
+//           .     |       .         |   .     |        .
+//           .     |       .         |   .     |        .
+//           M     |clustCoord(M, 1) |  ...    | clustCoord(M, N)
+//           L     |clustCoord(1, 1) |  ...    | clustCoord(1, N)
+//           L     |clustCoord(2, 1) |  ...    | clustCoord(2, N)
+//           .     |       .         |   .     |        .
+//           .     |       .         |   .     |        .
+//           .     |       .         |   .     |        .
+//           L     |clustCoord(L, 1) |  ...    | clustCoord(L, N)
 // </pre>
 //
-// When P initial cluster sets are specified, the algorithm is run P times.  
-// All user specified clusters must be of the same
-// dimension, N. Consequently the table has N+1 columns.  The first column
-// identifies the number of clusters associated with each run.
+// Because the desired value of K is often not known in advance and the 
+// results of the algorithm are dependent on the initial cluster centers, 
+// we provide a mechanism for the user to test multiple runs or sets of cluster centers
+// within a single call to the Learn phase.  The first column of the table identifies 
+// the number of clusters K in the particular run, while the remaining columns are a 
+// subset of the columns contained in the table on port INPUT_DATA.  We require that 
+// all user specified clusters be of the same dimension N and consequently, that the 
+// LEARN_PARAMETERS table have N+1 columns. Due to this restriction, only one request
+// can be processed for each call to the Learn phase and subsequent requests are 
+// silently ignored. 
 //
-// If the user does not supply an initial set of clusters on port LEARN_PARAMETERS, then the
-// class uses the first DefaultNumberOfClusters input data elements as initial
-// cluster centers and a single run is performed.
+// When the user does not supply an initial set of clusters, then the first 
+// DefaultNumberOfClusters input data observations are used as initial cluster 
+// centers and a single run is performed.
 //
-// This class requires a single set of columns of interest.  If initial cluster
-// centers were provided by the user, then the column names of the requests should be a subset 
-// of the column names specified in the table on port LEARN_PARAMETERS. Any requests beyond the
-// first set will be ignored.
 //
-// Given this selection of columns of interest, this class provides the
-// following functionalities, depending on the execution mode it is executed in:
+// This class provides the following functionalities, depending on the 
+// mode it is executed in:
 // * Learn: calculates new cluster centers for each run.  The output metadata on 
 //   port OUTPUT_MODEL is a multiblock dataset containing at a minimum
 //   one vtkTable with columns specifying the following for each run:
 //   the run ID, number of clusters, number of iterations required for convergence, 
-//   RMS error associated with the cluster, the number of elements in the cluster, and the new
+//   total error associated with the cluster (sum of squared Euclidean distance from each observation
+//   to its nearest cluster center), the cardinality of the cluster, and the new
 //   cluster coordinates.
 //
 // *Derive:  An additional vtkTable is stored in the multiblock dataset output on port OUTPUT_MODEL.
 //   This table contains columns that store for each run: the runID, number of clusters, 
 //   total error for all clusters in the run, local rank, and global rank.
-//   The local rank is computed by comparing RMS errors of all runs with
+//   The local rank is computed by comparing squared Euclidean errors of all runs with
 //   the same number of clusters.  The global rank is computed analagously across all runs.
 //
 // * Assess: This requires a multiblock dataset (as computed from Learn and Derive) on input port INPUT_MODEL
 //   and tabular data on input port INPUT_DATA that contains column names matching those
 //   of the tables on input port INPUT_MODEL. The assess mode reports the closest cluster center
-//   and associated distance of each observation in port INPUT_DATA's table to the cluster centers for
+//   and associated squared Euclidean distance of each observation in port INPUT_DATA's table to the cluster centers for
 //   each run in the multiblock dataset provided on port INPUT_MODEL.
 //  
+// The code can handle a wide variety of data types as it operates on vtkAbstractArrays 
+// and is not limited to vtkDataArrays.  A default distance functor that
+// computes the sum of the squares of the euclidean distance between two objects is provided 
+// (vtkKMeansDistanceFunctor). The default distance functor can be overridden to use alternative distance metrics.
+//
 // .SECTION Thanks
-// Thanks to Janine Bennett, David Thomposn, and Philippe Pebay of
+// Thanks to Janine Bennett, David Thompson, and Philippe Pebay of
 // Sandia National Laboratories for implementing this class.
 
 #ifndef __vtkKMeansStatistics_h
@@ -95,48 +103,31 @@ public:
   virtual void PrintSelf( ostream& os, vtkIndent indent );
   static vtkKMeansStatistics* New();
  
-//BTX 
   // Description:
   // Set the DistanceFunctor.
-  vtkSetMacro( DistanceFunctor, vtkKMeansDistanceFunctor* );
-//ETX 
+  virtual void SetDistanceFunctor( vtkKMeansDistanceFunctor* );
+  vtkGetObjectMacro(DistanceFunctor,vtkKMeansDistanceFunctor);
 
   // Description:
-  // Set the DefaultNumberOfClusters.
-  vtkSetMacro( DefaultNumberOfClusters, int );
+  // Set/get the \a DefaultNumberOfClusters, used when no initial cluster coordinates are specified.
+  vtkSetMacro(DefaultNumberOfClusters, int);
+  vtkGetMacro(DefaultNumberOfClusters, int);
 
   // Description:
-  // Set the KValuesArrayName.
+  // Set/get the KValuesArrayName.
   vtkSetStringMacro(KValuesArrayName);
-
-  // Description:
-  // Set the MaxNumIterations.
-  vtkSetMacro( MaxNumIterations, int );
-
-  // Description:
-  // Set the Tolerance.
-  vtkSetMacro( Tolerance, double );
-
-//BTX
-  // Description:
-  // Get the DistanceFunctor.
-  vtkGetMacro( DistanceFunctor, vtkKMeansDistanceFunctor* );
-//ETX
-
-  // Description:
-  // Get the DefaultNumberOfClusters.
-  vtkGetMacro( DefaultNumberOfClusters, int );
-
-  // Description:
-  // Get the KValuesArrayName.
   vtkGetStringMacro(KValuesArrayName);
 
   // Description:
-  // Get the MaxNumIterations.
+  // Set/get the MaxNumIterations used to terminate iterations on
+  // cluster center coordinates when the relative tolerance can not be met.
+  vtkSetMacro( MaxNumIterations, int );
   vtkGetMacro( MaxNumIterations, int );
 
   // Description:
-  // Get the Tolerance.
+  // Set/get the relative \a Tolerance used to terminate iterations on
+  // cluster center coordinates.
+  vtkSetMacro( Tolerance, double );
   vtkGetMacro( Tolerance, double );
 
   // Description:
@@ -209,6 +200,17 @@ protected:
                                       vtkTable*  newClusterElements,
                                       vtkIdTypeArray*  startRunID,
                                       vtkIdTypeArray*  endRunID);
+
+  // Description:
+  // Subroutine to initialize cluster centerss if not provided by the user.
+  // Called from within Learn (and will be overridden by vtkPKMeansStatistics
+  // to handle distributed datasets).
+  virtual void CreateInitialClusterCenters(vtkIdType numToAllocate, 
+                                           vtkIdTypeArray* numberOfClusters, 
+                                           vtkTable* inData, 
+                                           vtkTable* curClusterElements, 
+                                           vtkTable* newClusterElements);
+
 
   // Description:
   // This is the default number of clusters used when the user does not provide initial cluster centers.
