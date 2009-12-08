@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =========================================================================*/
 
 #include "pq@BPC_NAME@Initializer.h"
-#include "pqFilesOpenEvent.h"
+#include "pqOpenFilesEvent.h"
 
 #include <QApplication>
 #ifndef Q_WS_MAC
@@ -74,7 +74,7 @@ static void cocoa_odoc_event_handler(id self, SEL _cmd,
   if(qtFileNames.length())
   {
     // Create the actual event
-    pqFilesOpenEvent ev(qtFileNames);
+    pqOpenFilesEvent ev(qtFileNames);
     QApplication::instance()->sendEvent(QApplication::instance(), &ev);
   }
   // propagate to the reflectionDelegate stored in the QCocoaApplicationDelegate
@@ -119,7 +119,7 @@ static OSStatus carbon_odoc_event_handler(const AppleEvent *ae, AppleEvent *, lo
       }
       if(qtFileNames.length())
       {
-        pqFilesOpenEvent ev(qtFileNames);
+        pqOpenFilesEvent ev(qtFileNames);
         QApplication::instance()->sendEvent(QApplication::instance(), &ev);
       }
       stat = noErr;

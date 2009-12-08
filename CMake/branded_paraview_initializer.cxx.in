@@ -103,8 +103,7 @@ bool pq@BPC_NAME@Initializer::Initialize(int argc, char* argv[])
   QApplication::addLibraryPath(dir.absolutePath());
 
   // On Mac replace the handler for kAEOpenDocuments and if using Cocoa
-  // force creation of QCocoaApplicationDelegate singleton and replace the
-  // fileOpen method using method_setImplementation
+  // replace the fileOpen method of QCocoaApplicationDelegate
   this->setupAppleEventHandlers();
 
   // Create main window.

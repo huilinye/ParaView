@@ -82,7 +82,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqViewFrameActionGroupInterface.h"
 #include "pqViewModuleInterface.h"
 #include "pqXMLUtil.h"
-#include "pqFilesOpenEvent.h"
+#include "pqOpenFilesEvent.h"
 
 #if WIN32
 #include "process.h"
@@ -818,12 +818,11 @@ bool pqViewManager::eventFilter(QObject* caller, QEvent* e)
     // Update ViewPosition and GUISize properties on all view modules.
     this->updateViewPositions(); 
     }
-  else if(e->type() == pqFilesOpenEvent::eventId)
+  else if(e->type() == pqOpenFilesEvent::eventId)
     {
-    // Handle the pqFilesOpenEvent
-    // Michael Wild <themiwi@users.sourceforge.net>
+    // Handle the pqOpenFilesEvent
     // Get the files we should open and emit the signal
-    emit triggerFilesOpen(static_cast<pqFilesOpenEvent *>(e)->files());
+    emit triggerOpenFiles(static_cast<pqOpenFilesEvent *>(e)->files());
     return true;
     }
 

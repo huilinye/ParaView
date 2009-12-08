@@ -78,7 +78,6 @@ build_paraview_client(paraview
 
 # Need an extended Info.plist to register all the file types on Mac OS X
 # Further also fill it with version and copyright info.
-# Michael Wild <themiwi@users.sf.net>
 SET_TARGET_PROPERTIES(paraview PROPERTIES
   MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/MacOSXBundleInfo.plist.in
   MACOSX_BUNDLE_GUI_IDENTIFIER com.kitware.paraview

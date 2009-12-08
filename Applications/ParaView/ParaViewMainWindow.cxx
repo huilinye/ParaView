@@ -106,7 +106,7 @@ ParaViewMainWindow::ParaViewMainWindow()
   // behaviors, we use this convenience method.
   new pqParaViewBehaviors(this, this);
 
-  // QOpenFileEvent handling (Michael Wild <themiwi@users.sourceforge.net>)
+  // pqOpenFilesEvent handling:
   // First, retrieve the action from the menu
   QAction* fileOpenAction = this->Internals->menu_File->findChild<QAction*>("actionFileOpen");
   if(fileOpenAction)
@@ -115,13 +115,13 @@ ParaViewMainWindow::ParaViewMainWindow()
     pqLoadDataReaction* loadDataReaction= fileOpenAction->findChild<pqLoadDataReaction*>();
     if(loadDataReaction)
     {
-      // Last, get the MULTIVIEW_MANAGER
+      // Last, get the MULTIVIEW_MANAGER and connect the signal with the slot
       pqViewManager* viewManager = qobject_cast<pqViewManager*>(
           pqApplicationCore::instance()->manager("MULTIVIEW_MANAGER"));
       if (viewManager && loadDataReaction)
       {
         QObject::connect(
-            viewManager, SIGNAL(triggerFilesOpen(const QStringList&)),
+            viewManager, SIGNAL(triggerOpenFiles(const QStringList&)),
             loadDataReaction, SLOT(loadData(const QStringList&)));
       }
     }

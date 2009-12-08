@@ -132,8 +132,8 @@ signals:
   void afterSplitView(const Index& index, 
     Qt::Orientation orientation, float percent, const Index& childIndex);
 
-  /// Fired when pqFilesOpenEvent is received
-  void triggerFilesOpen(const QStringList& files);
+  /// Fired when pqOpenFilesEvent is received
+  void triggerOpenFiles(const QStringList& files);
 
 public slots:
   void removeWidget(QWidget *widget);
