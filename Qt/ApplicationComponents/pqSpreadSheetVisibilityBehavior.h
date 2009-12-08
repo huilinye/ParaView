@@ -29,47 +29,30 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ========================================================================*/
-#ifndef __pqVCRToolbar_h 
-#define __pqVCRToolbar_h
+#ifndef __pqSpreadSheetVisibilityBehavior_h 
+#define __pqSpreadSheetVisibilityBehavior_h
 
-#include <QToolBar>
+#include <QObject>
 #include "pqApplicationComponentsExport.h"
 
-class pqVCRController;
+class pqView;
 
-/// pqVCRToolbar is the toolbar with VCR controls.
-/// Simply instantiate this and put it in your application UI file or
-/// QMainWindow to use it.
-class PQAPPLICATIONCOMPONENTS_EXPORT pqVCRToolbar : public QToolBar
+/// @ingroup Behaviors
+/// Whenever spreadsheet view is created, ParaView wants to ensure that the
+/// active source is automatically displayed in that view. This is managed by
+/// this behavior. This also ensures that the spereadh
+class PQAPPLICATIONCOMPONENTS_EXPORT pqSpreadSheetVisibilityBehavior : public QObject
 {
   Q_OBJECT
-  typedef QToolBar Superclass;
+  typedef QObject Superclass;
 public:
-  pqVCRToolbar(const QString& title, QWidget* parentObject=0)
-    : Superclass(title, parentObject)
-    {
-    this->constructor();
-    }
-  pqVCRToolbar(QWidget* parentObject=0)
-    : Superclass(parentObject)
-    {
-    this->constructor();
-    }
-  ~pqVCRToolbar();
+  pqSpreadSheetVisibilityBehavior(QObject* parent=0);
 
 protected slots:
-  void setTimeRanges(double, double);
-  void onPlaying(bool);
+  void onViewCreated(pqView*);
 
 private:
-  Q_DISABLE_COPY(pqVCRToolbar)
-  
-  void constructor();
-
-  class pqInternals;
-  pqInternals* UI;
-
-  pqVCRController* Controller;
+  Q_DISABLE_COPY(pqSpreadSheetVisibilityBehavior)
 };
 
 #endif

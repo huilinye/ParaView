@@ -82,6 +82,13 @@ void pqAxesToolbar::constructor()
 }
 
 //-----------------------------------------------------------------------------
+pqAxesToolbar::~pqAxesToolbar()
+{
+  delete this->Internals;
+  this->Internals = 0;
+}
+
+//-----------------------------------------------------------------------------
 void pqAxesToolbar::updateEnabledState()
 {
   pqRenderView* renderView = 
@@ -104,7 +111,7 @@ void pqAxesToolbar::updateEnabledState()
 }
 
 //-----------------------------------------------------------------------------
-void pqAxesToolbar::showOrientationAxes(bool show)
+void pqAxesToolbar::showOrientationAxes(bool show_axes)
 {
   pqRenderView* renderView =
     qobject_cast<pqRenderView*>(pqActiveObjects::instance().activeView());
@@ -113,12 +120,12 @@ void pqAxesToolbar::showOrientationAxes(bool show)
     return;
     }
 
-  renderView->setOrientationAxesVisibility(show);
+  renderView->setOrientationAxesVisibility(show_axes);
   renderView->render();
 }
 
 //-----------------------------------------------------------------------------
-void pqAxesToolbar::showCenterAxes(bool show)
+void pqAxesToolbar::showCenterAxes(bool show_axes)
 {
   pqRenderView* renderView =
     qobject_cast<pqRenderView*>(pqActiveObjects::instance().activeView());
@@ -127,7 +134,7 @@ void pqAxesToolbar::showCenterAxes(bool show)
     return;
     }
 
-  renderView->setCenterAxesVisibility(show);
+  renderView->setCenterAxesVisibility(show_axes);
   renderView->render();
 }
 
@@ -170,7 +177,7 @@ void pqAxesToolbar::pickCenterOfRotation(bool begin)
 }
 
 //-----------------------------------------------------------------------------
-void pqAxesToolbar::pickCenterOfRotationFinished(double x, double y, double z)
+void pqAxesToolbar::pickCenterOfRotationFinished(double _x, double _y, double _z)
 {
   this->pickCenterOfRotation(false);
   pqRenderView* rm =
@@ -182,9 +189,9 @@ void pqAxesToolbar::pickCenterOfRotationFinished(double x, double y, double z)
     }
 
   double center[3];
-  center[0] = x;
-  center[1] = y;
-  center[2] = z;
+  center[0] = _x;
+  center[1] = _y;
+  center[2] = _z;
   rm->setCenterOfRotation(center);
   rm->render();
 }
