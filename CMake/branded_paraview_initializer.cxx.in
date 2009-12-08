@@ -61,6 +61,7 @@ pq@BPC_NAME@Initializer::pq@BPC_NAME@Initializer()
 //-----------------------------------------------------------------------------
 pq@BPC_NAME@Initializer::~pq@BPC_NAME@Initializer()
 {
+  this->cleanupAppleEventHandlers();
   delete this->Splash;
   this->Splash = NULL;
 
@@ -100,6 +101,10 @@ bool pq@BPC_NAME@Initializer::Initialize(int argc, char* argv[])
   dir.cdUp();
   dir.cd("Plugins");
   QApplication::addLibraryPath(dir.absolutePath());
+
+  // On Mac replace the handler for kAEOpenDocuments and if using Cocoa
+  // replace the fileOpen method of QCocoaApplicationDelegate
+  this->setupAppleEventHandlers();
 
   // Create main window.
   this->MainWindow = new @BPC_PVMAIN_WINDOW@();
@@ -141,4 +146,13 @@ bool pq@BPC_NAME@Initializer::Initialize(int argc, char* argv[])
   this->Splash->finish(this->MainWindow);
   return true;
 }
+//-----------------------------------------------------------------------------
+// Empty implementations for non-Mac platforms. The implementations for
+// Mac are in branded_paraview_initializer.mm.in
+#ifndef Q_WS_MAC
+void pq@BPC_NAME@Initializer::setupAppleEventHandlers()
+{}
+void pq@BPC_NAME@Initializer::cleanupAppleEventHandlers()
+{}
+#endif
 // ***************** DO NOT EDIT ***********************************

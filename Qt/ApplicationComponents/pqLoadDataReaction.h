@@ -47,6 +47,7 @@ public:
   /// Constructor. Parent cannot be NULL.
   pqLoadDataReaction(QAction* parent);
 
+public slots:
   /// Loads data files. Uses reader factory to determine what reader are
   /// supported. Returns the reader is creation successful, otherwise returns
   /// NULL.
@@ -55,7 +56,6 @@ public:
   static pqPipelineSource* loadData(const QStringList& files);
   static pqPipelineSource* loadData();
 
-public slots:
   /// Updates the enabled state. Applications need not explicitly call
   /// this.
   void updateEnableState();

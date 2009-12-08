@@ -36,7 +36,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqObjectInspectorWidget.h"
 #include "pqParaViewBehaviors.h"
 #include "pqParaViewMenuBuilders.h"
+#include "pqLoadDataReaction.h"
+#include "pqApplicationCore.h"
 #include "vtkPVPlugin.h"
+
+#include <QMenu>
 
 class ParaViewMainWindow::pqInternals : public Ui::pqClientMainWindow
 {
@@ -101,6 +105,27 @@ ParaViewMainWindow::ParaViewMainWindow()
   // Final step, define application behaviors. Since we want all ParaView
   // behaviors, we use this convenience method.
   new pqParaViewBehaviors(this, this);
+
+  // pqOpenFilesEvent handling:
+  // First, retrieve the action from the menu
+  QAction* fileOpenAction = this->Internals->menu_File->findChild<QAction*>("actionFileOpen");
+  if(fileOpenAction)
+  {
+    // Then, find the reaction
+    pqLoadDataReaction* loadDataReaction= fileOpenAction->findChild<pqLoadDataReaction*>();
+    if(loadDataReaction)
+    {
+      // Last, get the MULTIVIEW_MANAGER and connect the signal with the slot
+      pqViewManager* viewManager = qobject_cast<pqViewManager*>(
+          pqApplicationCore::instance()->manager("MULTIVIEW_MANAGER"));
+      if (viewManager && loadDataReaction)
+      {
+        QObject::connect(
+            viewManager, SIGNAL(triggerOpenFiles(const QStringList&)),
+            loadDataReaction, SLOT(loadData(const QStringList&)));
+      }
+    }
+  }
 }
 
 //-----------------------------------------------------------------------------

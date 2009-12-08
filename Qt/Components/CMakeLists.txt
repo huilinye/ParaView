@@ -670,6 +670,8 @@ ADD_LIBRARY(pqComponents
   pqWriterDialog.h
   pqXDMFPanel.cxx
   pqXDMFPanel.h
+  pqOpenFilesEvent.cxx
+  pqOpenFilesEvent.h
   ${EXTRA_PQ_COMPONENT_SOURCES}
   ${MOC_BUILT_SOURCES}
   ${RCS_SOURCES}

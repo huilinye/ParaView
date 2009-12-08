@@ -1,16 +1,13 @@
-// ***************** DO NOT EDIT ***********************************
-// This is a generated file. 
-// It will be replaced next time you rebuild.
 /*=========================================================================
 
    Program: ParaView
-  Module:    $RCSfile$
+   Module:    $RCSfile$
 
-   Copyright (c) 2005-2008 Sandia Corporation, Kitware Inc.
+   Copyright (c) 2009 Michael Wild, Sandia Corporation, Kitware Inc.
    All rights reserved.
 
    ParaView is a free software; you can redistribute it and/or modify it
-   under the terms of the ParaView license version 1.2. 
+   under the terms of the ParaView license version 1.2.
 
    See License_v1.2.txt for the full ParaView license.
    A copy of this license can be obtained by contacting
@@ -31,29 +28,32 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-=========================================================================*/
+========================================================================*/
+#ifndef __pqOpenFilesEvent_h
+#define __pqOpenFilesEvent_h
 
-#ifndef __pq@BPC_NAME@Initializer
-#define __pq@BPC_NAME@Initializer
+#include <QEvent>
+#include <QStringList>
+#include "pqComponentsExport.h"
 
-class QMainWindow;
-class pqPVApplicationCore;
-class QSplashScreen;
-
-class pq@BPC_NAME@Initializer
+/// Custom event class to handle Apple OpenDocuments event
+class PQCOMPONENTS_EXPORT pqOpenFilesEvent : public QEvent
 {
+  typedef QEvent Superclass;
 public:
-  pq@BPC_NAME@Initializer();
-  ~pq@BPC_NAME@Initializer();
+  /// The unique event ID
+  static const int eventId;
 
-  /// Initialize ParaView. It returns false if the initialization failed.
-  bool Initialize(int argc, char* argv[]);
+  /// Construct an event with a given list of files
+  pqOpenFilesEvent(const QStringList& files);
+
+  /// Returns the list of files to open
+  const QStringList& files() const { return fileNames; }
+
 private:
-  void setupAppleEventHandlers();
-  void cleanupAppleEventHandlers();
-  pqPVApplicationCore* PVApp;
-  QMainWindow* MainWindow;
-  QSplashScreen* Splash;
+  const QStringList fileNames;
 };
 
 #endif
+
+
