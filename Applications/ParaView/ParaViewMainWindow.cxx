@@ -121,7 +121,7 @@ ParaViewMainWindow::ParaViewMainWindow()
       if (viewManager && loadDataReaction)
       {
         QObject::connect(
-            viewManager, SIGNAL(triggerFileOpen(const QStringList&)),
+            viewManager, SIGNAL(triggerFilesOpen(const QStringList&)),
             loadDataReaction, SLOT(loadData(const QStringList&)));
       }
     }
