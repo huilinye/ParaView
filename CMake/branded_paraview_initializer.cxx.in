@@ -45,10 +45,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqViewManager.h"
 #include "pqBrandPluginsLoader.h"
 #include "pqOptions.h"
+#include "pqOpenFilesEvent.h"
 
 #ifdef Q_WS_X11
 #include <QPlastiqueStyle>
 #endif
+
+#ifdef Q_WS_MAC
+#include <Carbon/Carbon.h>
+#include <objc/runtime.h>
+#include <objc/message.h>
+#endif
+
 
 //-----------------------------------------------------------------------------
 pq@BPC_NAME@Initializer::pq@BPC_NAME@Initializer()
@@ -146,13 +154,152 @@ bool pq@BPC_NAME@Initializer::Initialize(int argc, char* argv[])
   this->Splash->finish(this->MainWindow);
   return true;
 }
+
+#ifdef Q_WS_MAC
+#ifdef QT_MAC_USE_COCOA
 //-----------------------------------------------------------------------------
-// Empty implementations for non-Mac platforms. The implementations for
-// Mac are in branded_paraview_initializer.mm.in
-#ifndef Q_WS_MAC
-void pq@BPC_NAME@Initializer::setupAppleEventHandlers()
-{}
-void pq@BPC_NAME@Initializer::cleanupAppleEventHandlers()
-{}
+// A method to replace application:openFiles: of QCocoaApplicationDelegate
+static void cocoa_odoc_event_handler(id self, SEL _cmd,
+                                     id sender,
+                                     id filenames)
+{
+  // need to emulate NSUInteger (that is what [NSArray count] returns)
+#if __LP64__ || TARGET_OS_EMBEDDED || TARGET_OS_IPHONE || TARGET_OS_WIN32 || NS_BUILD_32_LIKE_64
+  typedef unsigned long NSUInteger;
+#else
+  typedef unsigned int NSUInteger;
 #endif
+  // some constants we need for the Objective-C runtime
+  static const Class clsSelf = object_getClass(self);
+  static const SEL selCnt = sel_registerName("count");
+  static const SEL selOAI = sel_registerName("objectAtIndex:");
+  static const SEL selCSUE = sel_registerName("cStringUsingEncoding:");
+  static const SEL selAOF = sel_registerName("application:openFiles:");
+  // determine whether we are still launching
+  // (have to use Objective-C runtime functions to access instance variables)
+  bool inLaunch = false;
+  static Ivar ivIL = class_getInstanceVariable(clsSelf, "inLaunch");
+  if(ivIL)
+    inLaunch = (bool)object_getIvar(self, ivIL);
+  // translate NSArray into a QStringList
+  NSUInteger cnt = (NSUInteger)objc_msgSend(filenames, selCnt);
+  QStringList qtFileNames;
+  for(NSUInteger i = 0; i < cnt; ++i)
+  {
+    id fileName = objc_msgSend(filenames, selOAI, i);
+    QString qtFileName = QString::fromUtf8(
+        (const char*)objc_msgSend(fileName, selCSUE, 4 /* NSUTF8StringEncoding */));
+    if (inLaunch)
+    {
+      // skip command line arguments that Cocoa translated into an event
+      if (QApplication::instance()->arguments().contains(qtFileName))
+        continue;
+    }
+    qtFileNames.append(qtFileName);
+  }
+  if(qtFileNames.length())
+  {
+    // Create the actual event
+    pqOpenFilesEvent ev(qtFileNames);
+    QApplication::instance()->sendEvent(QApplication::instance(), &ev);
+  }
+  // propagate to the reflectionDelegate stored in the QCocoaApplicationDelegate
+  // (have to use Objective-C runtime functions to access instance variables)
+  static Ivar ivRD = class_getInstanceVariable(clsSelf, "reflectionDelegate");
+  if(ivRD)
+  {
+    id reflectionDelegate = (id)object_getIvar(self, ivRD);
+    if (reflectionDelegate &&
+        class_respondsToSelector(object_getClass(reflectionDelegate), selAOF))
+    {
+      objc_msgSend(reflectionDelegate, selAOF, sender, filenames);
+    }
+  }
+}
+#endif // QT_MAC_USE_COCOA
+
+//-----------------------------------------------------------------------------
+// The Carbon event handler for kAEOpenDocuments
+static OSStatus carbon_odoc_event_handler(const AppleEvent *ae, AppleEvent *, long)
+{
+  OSStatus stat = eventNotHandledErr;
+  OSType aeClass=typeWildCard;
+  AEGetAttributePtr(ae, keyEventClassAttr, typeType, 0, &aeClass, sizeof(aeClass), 0);
+  OSType aeID=typeWildCard;
+  AEGetAttributePtr(ae, keyEventIDAttr, typeType, 0, &aeID, sizeof(aeID), 0);
+  if(aeClass == kCoreEventClass && aeID == kAEOpenDocuments)
+  {
+    AEDescList filenames;
+    if(AEGetParamDesc(ae, keyDirectObject, typeAEList, &filenames) == noErr)
+    {
+      long n = 0;
+      AECountItems(&filenames, &n); ++n;
+      UInt8 buf[PATH_MAX];
+      QStringList qtFileNames;
+      for(long i = 1; i < n; i++)
+      {
+        FSRef aeData;
+        if(AEGetNthPtr(&filenames, i, typeFSRef, NULL, NULL, &aeData, sizeof(aeData), 0) != noErr)
+          continue;
+        FSRefMakePath(&aeData, buf, PATH_MAX);
+        qtFileNames.append(QString::fromUtf8((const char *)buf));
+      }
+      if(qtFileNames.length())
+      {
+        pqOpenFilesEvent ev(qtFileNames);
+        QApplication::instance()->sendEvent(QApplication::instance(), &ev);
+      }
+      stat = noErr;
+    }
+  }
+  return stat;
+}
+#endif // Q_WS_MAC
+
+//-----------------------------------------------------------------------------
+// To hold the return value of NewAEEventHandlerUPP, to be cleared with
+// DisposeAEEventHandlerUPP
+static AEEventHandlerUPP carbon_odoc_event_handlerUPP = NULL;
+
+//-----------------------------------------------------------------------------
+void pq@BPC_NAME@Initializer::setupAppleEventHandlers()
+{
+#ifdef Q_WS_MAC
+#ifdef QT_MAC_USE_COCOA
+  // install the Cocoa event-handler by replacing the method openFiles.
+  const SEL selSA = sel_registerName("sharedApplication");
+  const SEL selD = sel_registerName("delegate");
+  const SEL selAOF = sel_registerName("application:openFiles:");
+  id qtCocoaDelegate = objc_msgSend(objc_msgSend(
+        objc_getClass("NSApplication"), selSA), selD);
+  if(qtCocoaDelegate)
+    method_setImplementation(class_getInstanceMethod(
+          object_getClass(qtCocoaDelegate),selAOF),
+        (IMP)cocoa_odoc_event_handler);
+#endif // QT_MAC_USE_COCOA
+  // always install the Carbon event-handler (used before NSApplication
+  // installed its own event handlers)
+  if (!carbon_odoc_event_handlerUPP)
+  {
+    carbon_odoc_event_handlerUPP = NewAEEventHandlerUPP(AEEventHandlerUPP(carbon_odoc_event_handler));
+    AEInstallEventHandler(kCoreEventClass, kAEOpenDocuments,
+        carbon_odoc_event_handlerUPP, SRefCon(QApplication::instance()), false);
+  }
+#endif // Q_WS_MAC
+}
+
+//-----------------------------------------------------------------------------
+void pq@BPC_NAME@Initializer::cleanupAppleEventHandlers()
+{
+#ifdef Q_WS_MAC
+  // Dispose of the Carbon event handler
+  // do not remove the event-handlers, that is taken care of by qt_cleanup()
+  if (carbon_odoc_event_handlerUPP)
+  {
+    DisposeAEEventHandlerUPP(carbon_odoc_event_handlerUPP);
+    carbon_odoc_event_handlerUPP = NULL;
+  }
+#endif // Q_WS_MAC
+}
+
 // ***************** DO NOT EDIT ***********************************

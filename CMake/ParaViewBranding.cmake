@@ -220,23 +220,15 @@ FUNCTION(build_paraview_client BPC_NAME)
     ${rcs_sources}
     )
 
-  SET(sources)
   IF (NOT BPC_DONT_MAKE_EXECUTABLE)
     CONFIGURE_FILE(${branding_source_dir}/branded_paraview_main.cxx.in
                    ${CMAKE_CURRENT_BINARY_DIR}/${BPC_NAME}_main.cxx @ONLY)
-    LIST(APPEND sources ${CMAKE_CURRENT_BINARY_DIR}/${BPC_NAME}_main.cxx)
   ENDIF (NOT BPC_DONT_MAKE_EXECUTABLE)
 
   CONFIGURE_FILE(${branding_source_dir}/branded_paraview_initializer.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/pq${BPC_NAME}Initializer.cxx @ONLY)
-  LIST(APPEND sources ${CMAKE_CURRENT_BINARY_DIR}/pq${BPC_NAME}Initializer.cxx)
   CONFIGURE_FILE(${branding_source_dir}/branded_paraview_initializer.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/pq${BPC_NAME}Initializer.h @ONLY)
-  IF (Q_WS_MAC)
-    CONFIGURE_FILE(${branding_source_dir}/branded_paraview_initializer.mm.in
-                   ${CMAKE_CURRENT_BINARY_DIR}/pq${BPC_NAME}Initializer.mm @ONLY)
-    LIST(APPEND sources ${CMAKE_CURRENT_BINARY_DIR}/pq${BPC_NAME}Initializer.mm)
-  ENDIF (Q_WS_MAC)
 
   IF (NOT Q_WS_MAC)
     SET(pv_exe_name ${BPC_NAME}${PV_EXE_SUFFIX})
@@ -252,7 +244,8 @@ FUNCTION(build_paraview_client BPC_NAME)
     # needed to set up shared forwarding correctly.
     SET (PV_EXE_LIST ${BPC_NAME})
     ADD_EXECUTABLE(${pv_exe_name} WIN32 ${MAKE_BUNDLE}
-                   ${sources}
+                   ${BPC_NAME}_main.cxx
+                   pq${BPC_NAME}Initializer.cxx
                    ${rcs_sources}
                    ${exe_icon}
                    ${apple_bundle_sources}
@@ -281,7 +274,7 @@ FUNCTION(build_paraview_client BPC_NAME)
   ELSE (NOT BPC_DONT_MAKE_EXECUTABLE)
 
     ADD_LIBRARY(${BPC_NAME} SHARED 
-                ${sources}
+                pq${BPC_NAME}Initializer.cxx
                 ${rcs_sources}
                 ${BPC_SOURCES}
                 )
