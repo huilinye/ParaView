@@ -249,26 +249,12 @@ pqDataRepresentation* pqDisplayPolicy::createPreferredRepresentation(
       }
     }
 
-  // Simply create a display for the view set up the connections and
-  // return.
-  pqDataRepresentation* display = this->newRepresentation(opPort, view);
-
-  // If this is the only source displayed in the view, reset the camera to make sure its visible
-  if(view->getNumberOfVisibleRepresentations()==1)
-    {
-    pqRenderViewBase* ren = qobject_cast<pqRenderViewBase*>(view);
-    if (ren)
-      {
-      ren->resetCamera();
-      }
-    }
-
-  return display;
+  return this->setRepresentationVisibility(opPort, view, true);
 }
 
 //-----------------------------------------------------------------------------
 pqDataRepresentation* pqDisplayPolicy::setRepresentationVisibility(
-  pqOutputPort* opPort, pqView* view, bool visible) 
+  pqOutputPort* opPort, pqView* view, bool visible) const
 {
   if (!opPort)
     {
@@ -299,7 +285,7 @@ pqDataRepresentation* pqDisplayPolicy::setRepresentationVisibility(
     }
   if (!repr)
     {
-    qDebug() << "Cannot show the data in the current view although"
+    qDebug() << "Cannot show the data in the current view although "
       "the view reported that it can show the data.";
     return 0;
     }

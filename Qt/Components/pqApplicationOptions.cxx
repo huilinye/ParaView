@@ -29,15 +29,12 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =========================================================================*/
-
-
 #include "pqApplicationOptions.h"
 #include "ui_pqApplicationOptions.h"
 
 #include "vtkSMProxyManager.h"
 #include "vtkSMProxyDefinitionIterator.h"
 #include "vtkSMPropertyHelper.h"
-
 #include "pqAnimationScene.h"
 #include "pqApplicationCore.h"
 #include "pqChartRepresentation.h"
@@ -48,6 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqSetName.h"
 #include "pqSettings.h"
 #include "pqViewModuleInterface.h"
+#include "pqScalarsToColors.h"
 
 #include <QMenu>
 #include <QDoubleValidator>
@@ -100,6 +98,12 @@ pqApplicationOptions::pqApplicationOptions(QWidget *widgetParent)
 
   // enable the apply button when things are changed
   QObject::connect(this->Internal->DefaultViewType,
+                  SIGNAL(currentIndexChanged(int)),
+                  this, SIGNAL(changesAvailable()));
+  QObject::connect(this->Internal->RescaleDataRangeMode,
+                  SIGNAL(currentIndexChanged(int)),
+                  this, SIGNAL(changesAvailable()));
+  QObject::connect(this->Internal->DefaultTimeStepMode,
                   SIGNAL(currentIndexChanged(int)),
                   this, SIGNAL(changesAvailable()));
   QObject::connect(this->Internal->HeartBeatTimeout,
@@ -230,6 +234,12 @@ void pqApplicationOptions::applyChanges()
   pqServer::setHeartBeatTimeoutSetting(static_cast<int>(
       this->Internal->HeartBeatTimeout->text().toDouble()*60*1000));
 
+  pqScalarsToColors::setColorRangeScalingMode(
+    this->Internal->RescaleDataRangeMode->currentIndex());
+
+  settings->setValue("DefaultTimeStepMode", 
+    this->Internal->DefaultTimeStepMode->currentIndex());
+
   bool autoAccept = this->Internal->AutoAccept->isChecked();
   settings->setValue("autoAccept", autoAccept);
   pqObjectInspectorWidget::setAutoAccept(autoAccept);
@@ -278,6 +288,12 @@ void pqApplicationOptions::resetChanges()
   int index = this->Internal->DefaultViewType->findData(curView);
   index = (index==-1)? 0 : index;
   this->Internal->DefaultViewType->setCurrentIndex(index);
+
+  this->Internal->DefaultTimeStepMode->setCurrentIndex(
+    settings->value("DefaultTimeStepMode", 0).toInt());
+
+  this->Internal->RescaleDataRangeMode->setCurrentIndex(
+    pqScalarsToColors::colorRangeScalingMode());
 
   this->Internal->HeartBeatTimeout->setText(
     QString("%1").arg(pqServer::getHeartBeatTimeoutSetting()/(60.0*1000), 0, 'f', 2));

@@ -14,10 +14,10 @@
 =========================================================================*/
 // .NAME vtkVolumePicker - ray-cast picker enhanced for volumes
 // .SECTION Description
-// vtkVolumePicker is a subclass of vtkSurfacePicker.  It has one
-// advantage over vtkSurfacePicker for volumes: it will be able to
+// vtkVolumePicker is a subclass of vtkCellPicker.  It has one
+// advantage over vtkCellPicker for volumes: it will be able to
 // correctly perform picking when CroppingPlanes are present.  This
-// isn't possible for vtkSurfacePicker since it doesn't link to
+// isn't possible for vtkCellPicker since it doesn't link to
 // the VolumeRendering classes and hence cannot access information
 // about the CroppingPlanes.
 //
@@ -30,13 +30,13 @@
 #ifndef __vtkVolumePicker_h
 #define __vtkVolumePicker_h
 
-#include "vtkSurfacePicker.h"
+#include "vtkCellPicker.h"
 
-class VTK_VOLUMERENDERING_EXPORT vtkVolumePicker : public vtkSurfacePicker
+class VTK_VOLUMERENDERING_EXPORT vtkVolumePicker : public vtkCellPicker
 {
 public:
   static vtkVolumePicker *New();
-  vtkTypeRevisionMacro(vtkVolumePicker, vtkSurfacePicker);
+  vtkTypeRevisionMacro(vtkVolumePicker, vtkCellPicker);
   void PrintSelf(ostream& os, vtkIndent indent);
 
   // Description:
@@ -61,12 +61,12 @@ protected:
   vtkVolumePicker();
   ~vtkVolumePicker();
 
-  void Initialize();
+  virtual void ResetPickInfo();
 
   virtual double IntersectVolumeWithLine(const double p1[3],
                                          const double p2[3],
                                          double t1, double t2,
-                                         vtkVolume *volume, 
+                                         vtkProp3D *prop, 
                                          vtkAbstractVolumeMapper *mapper);
 
   static int ClipLineWithCroppingRegion(const double bounds[6],

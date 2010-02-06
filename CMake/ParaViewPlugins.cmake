@@ -1,4 +1,4 @@
-# Requires ParaView_SOURCE_DIR and ParaView_BINARY_DIR to be set.
+# Requires ParaView_QT_DIR and ParaView_BINARY_DIR to be set.
 
 INCLUDE("${VTK_MAKE_INSTANTIATOR}/vtkMakeInstantiator.cmake")
 
@@ -6,11 +6,11 @@ INCLUDE("${VTK_MAKE_INSTANTIATOR}/vtkMakeInstantiator.cmake")
 # This is a macro internal to ParaView and should not be directly used by
 # external applications. This may change in future without notice.
 MACRO(internal_paraview_install_plugin name)
-  IF (PV_INSTALL_BIN_DIR)
+  IF (PV_INSTALL_LIB_DIR)
     INSTALL(TARGETS ${name}
-      DESTINATION "${PV_INSTALL_BIN_DIR}/plugins/${name}"
+      DESTINATION "${PV_INSTALL_LIB_DIR}/plugins/${name}"
       COMPONENT Runtime)
-  ENDIF (PV_INSTALL_BIN_DIR)
+  ENDIF (PV_INSTALL_LIB_DIR)
 ENDMACRO(internal_paraview_install_plugin)
 
 # helper PV_PLUGIN_LIST_CONTAINS macro
@@ -278,9 +278,9 @@ MACRO(ADD_PARAVIEW_OBJECT_PANEL OUTIFACES OUTSRCS)
   SET(PANEL_XML_GROUP ${ARG_XML_GROUP})
   SET(${OUTIFACES} ${PANEL_NAME})
 
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqObjectPanelImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqObjectPanelImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${PANEL_NAME}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqObjectPanelImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqObjectPanelImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${PANEL_NAME}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -313,9 +313,9 @@ MACRO(ADD_PARAVIEW_DISPLAY_PANEL OUTIFACES OUTSRCS)
   SET(PANEL_XML_NAME ${ARG_XML_NAME})
   SET(${OUTIFACES} ${PANEL_NAME})
 
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqDisplayPanelImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqDisplayPanelImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${PANEL_NAME}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqDisplayPanelImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqDisplayPanelImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${PANEL_NAME}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -406,9 +406,9 @@ MACRO(ADD_PARAVIEW_VIEW_MODULE OUTIFACES OUTSRCS)
     SET(ARG_DISPLAY_TYPE "pqDataRepresentation")
   ENDIF(NOT ARG_DISPLAY_TYPE)
 
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Core/pqViewModuleImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Core/pqViewModuleImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_VIEW_TYPE}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Core/pqViewModuleImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Core/pqViewModuleImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_VIEW_TYPE}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -471,9 +471,9 @@ MACRO(ADD_PARAVIEW_VIEW_OPTIONS OUTIFACES OUTSRCS)
 
   SET(${OUTIFACES} ${ARG_VIEW_TYPE}Options)
 
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqViewOptionsImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqViewOptionsImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_VIEW_TYPE}OptionsImplementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqViewOptionsImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqViewOptionsImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_VIEW_TYPE}OptionsImplementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -505,9 +505,9 @@ MACRO(ADD_PARAVIEW_ACTION_GROUP OUTIFACES OUTSRCS)
  
   SET(${OUTIFACES} ${ARG_CLASS_NAME})
 
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqActionGroupImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqActionGroupImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqActionGroupImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqActionGroupImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -536,9 +536,9 @@ MACRO(ADD_PARAVIEW_VIEW_FRAME_ACTION_GROUP OUTIFACES OUTSRCS)
  
   SET(${OUTIFACES} ${ARG_CLASS_NAME})
 
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqViewFrameActionGroupImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqViewFrameActionGroupImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqViewFrameActionGroupImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqViewFrameActionGroupImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -575,9 +575,9 @@ MACRO(ADD_PARAVIEW_DOCK_WINDOW OUTIFACES OUTSRCS)
   ENDIF(NOT ARG_DOCK_AREA)
   SET(${OUTIFACES} ${ARG_CLASS_NAME})
 
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqDockWindowImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqDockWindowImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqDockWindowImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqDockWindowImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -623,9 +623,9 @@ MACRO(ADD_PARAVIEW_AUTO_START OUTIFACES OUTSRCS)
   ENDIF (NOT ARG_SHUTDOWN)
   
   SET(${OUTIFACES} ${ARG_CLASS_NAME})
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Core/pqAutoStartImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Core/pqAutoStartImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Core/pqAutoStartImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Core/pqAutoStartImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -657,9 +657,9 @@ MACRO(ADD_PARAVIEW_DISPLAY_PANEL_DECORATOR OUTIFACES OUTSRCS)
   PV_PLUGIN_PARSE_ARGUMENTS(ARG "CLASS_NAME;PANEL_TYPES" "" ${ARGN})
 
   SET(${OUTIFACES} ${ARG_CLASS_NAME})
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqDisplayPanelDecoratorImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqDisplayPanelDecoratorImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pqDisplayPanelDecoratorImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pqDisplayPanelDecoratorImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -687,9 +687,9 @@ MACRO(ADD_3DWIDGET OUTIFACES OUTSRCS)
   PV_PLUGIN_PARSE_ARGUMENTS(ARG "CLASS_NAME;WIDGET_TYPE" "" ${ARGN})
 
   SET(${OUTIFACES} ${ARG_CLASS_NAME})
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pq3DWidgetImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pq3DWidgetImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Components/pq3DWidgetImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Components/pq3DWidgetImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_CLASS_NAME}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -722,9 +722,9 @@ MACRO(ADD_PARAVIEW_GRAPH_LAYOUT_STRATEGY OUTIFACES OUTSRCS)
 
   SET(${OUTIFACES} ${ARG_STRATEGY_TYPE})
 
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Core/pqGraphLayoutStrategyImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Core/pqGraphLayoutStrategyImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_STRATEGY_TYPE}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Core/pqGraphLayoutStrategyImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Core/pqGraphLayoutStrategyImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_STRATEGY_TYPE}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -757,9 +757,9 @@ MACRO(ADD_PARAVIEW_TREE_LAYOUT_STRATEGY OUTIFACES OUTSRCS)
 
   SET(${OUTIFACES} ${ARG_STRATEGY_TYPE})
 
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Core/pqTreeLayoutStrategyImplementation.h.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Core/pqTreeLayoutStrategyImplementation.h.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_STRATEGY_TYPE}Implementation.h @ONLY)
-  CONFIGURE_FILE(${ParaView_SOURCE_DIR}/Qt/Core/pqTreeLayoutStrategyImplementation.cxx.in
+  CONFIGURE_FILE(${ParaView_QT_DIR}/Core/pqTreeLayoutStrategyImplementation.cxx.in
                  ${CMAKE_CURRENT_BINARY_DIR}/${ARG_STRATEGY_TYPE}Implementation.cxx @ONLY)
 
   GET_DIRECTORY_PROPERTY(include_dirs_tmp INCLUDE_DIRECTORIES)
@@ -965,10 +965,10 @@ FUNCTION(ADD_PARAVIEW_PLUGIN NAME VERSION)
     ENDIF(PARAVIEW_PLUGINLIST_TXT)
 
     CONFIGURE_FILE(
-      ${ParaView_SOURCE_DIR}/CMake/pqParaViewPlugin.h.in
+      ${ParaView_CMAKE_DIR}/pqParaViewPlugin.h.in
       ${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_NAME}_Plugin.h @ONLY)
     CONFIGURE_FILE(
-      ${ParaView_SOURCE_DIR}/CMake/pqParaViewPlugin.cxx.in
+      ${ParaView_CMAKE_DIR}/pqParaViewPlugin.cxx.in
       ${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_NAME}_Plugin.cxx @ONLY)
 
     SET (plugin_sources
@@ -979,6 +979,11 @@ FUNCTION(ADD_PARAVIEW_PLUGIN NAME VERSION)
       QT4_WRAP_CPP(tmp ${CMAKE_CURRENT_BINARY_DIR}/${PLUGIN_NAME}_Plugin.h)
       SET (plugin_sources ${plugin_sources} ${tmp})
     ENDIF (plugin_type_gui)
+    
+   if (MSVC)
+      # Do not generate manifests for the plugins - caused issues loading plugins
+      set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /MANIFEST:NO")
+    endif(MSVC)
 
     IF (PARAVIEW_BUILD_SHARED_LIBS)
       ADD_LIBRARY(${NAME} SHARED ${GUI_SRCS} ${SM_SRCS} ${ARG_SOURCES} ${plugin_sources})
@@ -986,9 +991,14 @@ FUNCTION(ADD_PARAVIEW_PLUGIN NAME VERSION)
       ADD_LIBRARY(${NAME} ${GUI_SRCS} ${SM_SRCS} ${ARG_SOURCES} ${plugin_sources})
     ENDIF (PARAVIEW_BUILD_SHARED_LIBS)
 
-    IF(GUI_SRCS)
+    IF(MSVC)
+      # Do not generate manifests for the plugins - caused issues loading plugins
+      set_target_properties(${NAME} PROPERTIES LINK_FLAGS "/MANIFEST:NO")
+    ENDIF(MSVC)
+
+    IF(plugin_type_gui OR GUI_SRCS)
       TARGET_LINK_LIBRARIES(${NAME} pqComponents)
-    ENDIF(GUI_SRCS)
+    ENDIF(plugin_type_gui OR GUI_SRCS)
     IF(SM_SRCS)
       TARGET_LINK_LIBRARIES(${NAME} vtkPVServerManager)
     ENDIF(SM_SRCS)
@@ -996,6 +1006,14 @@ FUNCTION(ADD_PARAVIEW_PLUGIN NAME VERSION)
     # Add install rules for the plugin. Currently only the plugins in ParaView
     # source are installed.
     internal_paraview_install_plugin(${NAME})
+
+    # this builds a list of actual plugin names added by plugins provided in the
+    # ParaView source directory itself.
+    # This is used to generate the ".plugins" configuration file.
+    if (BUILD_PARAVIEW_PLUGINLIST)
+      SET(PARAVIEW_PLUGINLIST ${PARAVIEW_PLUGINLIST} ${NAME} CACHE INTERNAL
+        "List of configured plugins")
+    endif (BUILD_PARAVIEW_PLUGINLIST)
 
   ENDIF(GUI_SRCS OR SM_SRCS OR ARG_SOURCES OR ARG_PYTHON_MODULES)
   

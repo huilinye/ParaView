@@ -504,6 +504,13 @@ void vtkAbstractPolygonalHandleRepresentation3D
   double handleSize = this->HandleTransformMatrix->GetElement(0,0) * sf;
   handleSize = (handleSize < 0.001 ? 0.001 : handleSize);
 
+  this->SetUniformScale( handleSize );
+}
+
+//----------------------------------------------------------------------
+void vtkAbstractPolygonalHandleRepresentation3D
+::SetUniformScale(double handleSize)
+{
   this->HandleTransformMatrix->SetElement(0, 0, handleSize);
   this->HandleTransformMatrix->SetElement(1, 1, handleSize);
   this->HandleTransformMatrix->SetElement(2, 2, handleSize);
@@ -512,7 +519,7 @@ void vtkAbstractPolygonalHandleRepresentation3D
 //----------------------------------------------------------------------
 void vtkAbstractPolygonalHandleRepresentation3D::Highlight(int highlight)
 {
- this->Actor->SetProperty(highlight ? this->SelectedProperty : this->Property);
+  this->Actor->SetProperty(highlight ? this->SelectedProperty : this->Property);
 }
 
 //----------------------------------------------------------------------
@@ -611,6 +618,29 @@ void vtkAbstractPolygonalHandleRepresentation3D::ShallowCopy(vtkProp *prop)
     this->SetLabelText( rep->GetLabelText() );
     }
   this->Superclass::ShallowCopy(prop);
+}
+
+//----------------------------------------------------------------------
+void vtkAbstractPolygonalHandleRepresentation3D::DeepCopy(vtkProp *prop)
+{
+  vtkAbstractPolygonalHandleRepresentation3D *rep = 
+    vtkAbstractPolygonalHandleRepresentation3D::SafeDownCast(prop);
+  if ( rep )
+    {
+    this->Property->DeepCopy(rep->GetProperty());
+    this->SelectedProperty->DeepCopy(rep->GetSelectedProperty());
+    this->Actor->SetProperty(this->Property);
+
+    // copy the handle shape
+    vtkPolyData *pd = vtkPolyData::New();
+    pd->DeepCopy( rep->HandleTransformFilter->GetInput() );
+    this->HandleTransformFilter->SetInput(pd);
+    pd->Delete();
+
+    this->LabelVisibility = rep->LabelVisibility;
+    this->SetLabelText( rep->GetLabelText() );
+    }
+  this->Superclass::DeepCopy(prop);
 }
 
 //----------------------------------------------------------------------

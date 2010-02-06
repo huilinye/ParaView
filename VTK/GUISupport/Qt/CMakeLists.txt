@@ -20,6 +20,7 @@ INCLUDE_DIRECTORIES ( ${CMAKE_CURRENT_BINARY_DIR} )
 # add files that require Qt 4
 SET ( QVTKLibSrcs
     ${QVTKLibSrcs}
+    QFilterTreeProxyModel.cxx
     QVTKPaintEngine.cxx
     QVTKPaintEngine.h
     vtkQtAbstractModelAdapter.cxx
@@ -34,6 +35,7 @@ SET ( QVTKLibSrcs
     
 SET ( QVTKMocHeaders
     ${QVTKMocHeaders}
+    QFilterTreeProxyModel.h
     vtkQtAbstractModelAdapter.h
     vtkQtAnnotationLayersModelAdapter.h
     vtkQtTableModelAdapter.h
@@ -85,7 +87,9 @@ IF(VTK_USE_VIEWS)
       QT4_WRAP_UI(UI_FILES vtkQtRichTextView.ui)
       SET(QVTKLibSrcs ${QVTKLibSrcs} ${UI_FILES} vtkQtRichTextView.cxx)
       SET(QVTKMocHeaders ${QVTKMocHeaders} vtkQtRichTextView.h)
-      SET(QT_USE_PHONON 1)
+      IF(QT_PHONON_FOUND)
+        SET(QT_USE_PHONON 1)
+      ENDIF(QT_PHONON_FOUND)
       SET(QT_USE_QTWEBKIT 1)
     ENDIF( VTK_QT_USE_WEBKIT )
   ENDIF(QT_QTWEBKIT_FOUND)
@@ -144,6 +148,12 @@ TARGET_LINK_LIBRARIES( QVTK vtkQtChart )
 IF(VTK_USE_VIEWS)
   TARGET_LINK_LIBRARIES( QVTK vtkViews )
 ENDIF(VTK_USE_VIEWS)
+
+IF(APPLE)
+  IF(VTK_USE_CARBON)
+    TARGET_LINK_LIBRARIES( QVTK "-framework Carbon" )
+  ENDIF(VTK_USE_CARBON)
+ENDIF(APPLE)
 
 # build plugin
 SET(QT_PLUGIN_LIBS ${QT_LIBRARIES})

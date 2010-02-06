@@ -1862,106 +1862,6 @@
   </ProxyGroup>
 
   <ProxyGroup name="sources">
-   <SourceProxy name="CosmoReader" 
-                class="vtkCosmoReader"
-                label="COSMO Reader">
-     <Documentation
-       short_help="Read a cosmology file."
-       long_help="Read a cosmology file into a vtkUnstructuredGrid.">
-       The Cosmology reader reads a binary file of particle location, 
-       velocity and mass creating a vtkUnstructuredGrid. The default 
-       file extension is .cosmo.
-     </Documentation>
-
-     <StringVectorProperty
-        name="FileName"
-        command="SetFileName"
-        animateable="0"
-        number_of_elements="1">
-        <FileListDomain name="files"/>
-        <Documentation>
-          This property specifies the file name for the COSMO reader.
-        </Documentation>
-     </StringVectorProperty>
-
-     <IntVectorProperty
-        name="Stride"
-        command="SetStride"
-        number_of_elements="1"
-        default_values="1" >
-        <IntRangeDomain name="range" min="1" />
-     </IntVectorProperty>
-
-     <IntVectorProperty
-        name="DefaultRangeInfo"
-        command="GetPositionRange"
-        information_only="1">
-        <SimpleIntInformationHelper/>
-     </IntVectorProperty>
-
-     <!--
-     <IntVectorProperty
-        name="PositionRange"
-        command="SetPositionRange"
-        number_of_elements="2"
-        default_values="0 0">
-        <IntRangeDomain name="range">
-             <RequiredProperties>
-                 <Property name="DefaultRangeInfo" function="Range"/>
-             </RequiredProperties>
-        </IntRangeDomain>
-     </IntVectorProperty>
-     -->
-
-     <StringVectorProperty
-        name="PointArrayInfo"
-        information_only="1">
-        <ArraySelectionInformationHelper attribute_name="Point"/>
-     </StringVectorProperty>
-
-     <StringVectorProperty
-        name="PointArrayStatus"
-        command="SetPointArrayStatus"
-        number_of_elements="2"
-        repeat_command="1"
-        number_of_elements_per_command="2"
-        element_types="2 0"
-        information_property="PointArrayInfo" >
-        <ArraySelectionDomain name="array_list" >
-          <RequiredProperties>
-             <Property name="PointArrayInfo" function="ArrayList"/>
-          </RequiredProperties>
-        </ArraySelectionDomain>
-     </StringVectorProperty>
-
-     <IntVectorProperty 
-        name="MakeCells" 
-        command="SetMakeCells" 
-        number_of_elements="1"
-        default_values="1" > 
-       <BooleanDomain name="bool"/>
-       <Documentation>
-         If this property is set to 1, a VTK_VERTEX cell is created for each point.
-       </Documentation>
-     </IntVectorProperty> 
-
-     <IntVectorProperty
-        name="TagSize"
-        command="SetTagSize"
-        label="64-bit Tags"
-        number_of_elements="1"
-        default_values="0" >
-       <BooleanDomain name="bool"/>
-       <Documentation>
-         If this property is false, then 32-bit tags are used for the tag field.  Otherwise, 64-bit tags are used.
-       </Documentation>
-     </IntVectorProperty>
-
-     <Hints>
-       <ReaderFactory extensions="cosmo" file_description="Cosmology files" />
-     </Hints>
-   <!-- End CosmoReader -->
-   </SourceProxy>
 
    <SourceProxy name="DEMReader" 
                 class="vtkDEMReader"
@@ -3400,6 +3300,31 @@
           file_description="Phasta Files" />
      </Hints>
    </SourceProxy>
+      
+   <SourceProxy name="FlashReader" 
+                class="vtkFlashReader"
+                label="Flash Reader">
+     <Documentation
+       short_help="Read multi-block dataset from a Flash file."
+       long_help="Read multi-block dataset from a Flash file.">
+         This Flash reader loads data stored in Flash format. The output of this reader is a multi-block dataset.
+     </Documentation>
+     <StringVectorProperty
+        name="FileName"
+        command="SetFileName"
+        animateable="0"
+        number_of_elements="1">
+        <FileListDomain name="files"/>
+        <Documentation>
+            This property specifies the file name for the Flash reader.
+        </Documentation>
+     </StringVectorProperty>
+
+     <Hints>
+      <ReaderFactory extensions="Flash flash"
+          file_description="Flash Files" />
+     </Hints>
+   </SourceProxy>
 
    <FileSeriesReaderProxy name="stlreader"
                           class="vtkFileSeriesReader"
@@ -4641,80 +4566,233 @@
      <!-- End SESAMEReader -->
    </SourceProxy>
 
-    <!-- Beginning of FOAM Reader -->
-    <SourceProxy name="OpenFOAMReader" 
-                    class="vtkOpenFOAMReader">
-      <Documentation
-        short_help="Reads a dataset in OpenFOAM format."
-        long_help="Reads a dataset in OpenFOAM format." >
-        vtkOpenFOAMReader creates an multiblock dataset. It reads a controlDict
-        file, mesh information, and time dependent data.  The controlDict file
-        contains timestep information. The polyMesh folders contain mesh information
-        The time folders contain transient data for the cells  Each folder can
-        contain any number of data files.
-      </Documentation>
-      <StringVectorProperty name="FileName"
-                            command="SetFileName"
-                            animateable="0"
-                            number_of_elements="1">
+    <!-- Beginning of OpenFOAM Reader -->
+    <SourceProxy name="OpenFOAMReader" class="vtkPOpenFOAMReader">
+      <StringVectorProperty
+         name="FileName"
+         command="SetFileName"
+         number_of_elements="1"
+         animateable="0">
         <FileListDomain name="files"/>
-        <Documentation>
-          Set the file name for the OpenFOAM reader.
-        </Documentation>
       </StringVectorProperty>
-      <StringVectorProperty name="CellArrayInfo"
-                            information_only="1">
+
+      <Property
+         name="Refresh"
+         command="SetRefresh"
+         is_internal="1"
+         animateable="0">
+        <Documentation>
+          Refresh time information and selection list metadata. Useful when watching a running simulation.
+        </Documentation>
+      </Property>
+
+      <IntVectorProperty 
+         name="CaseType" 
+         command="SetCaseType"
+         number_of_elements="1"
+         default_values="1"
+         animateable="0">
+        <EnumerationDomain name="enum">
+          <Entry value="0" text="Decomposed Case"/>
+          <Entry value="1" text="Reconstructed Case"/>
+        </EnumerationDomain>
+        <Documentation>
+          The property indicates whether decomposed mesh or reconstructed mesh should be read
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+         name="CreateCellToPoint"
+         command="SetCreateCellToPoint"
+         number_of_elements="1"
+         default_values="1"
+         label="Create cell-to-point filtered data"
+         animateable="0">
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Create point data from cell data. Beware: the filter does not do inverse distance weighting.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+         name="AddDimensionsToArrayNames"
+         command="SetAddDimensionsToArrayNames"
+         number_of_elements="1"
+         default_values="0"
+         label="Add dimensional units to array names"
+         animateable="0">
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Read dimensional units from field data and add them to array names as human-readable string.
+        </Documentation>
+      </IntVectorProperty>
+
+      <DoubleVectorProperty
+         name="TimestepValues"
+         repeatable="1"
+         information_only="1">
+        <TimeStepsInformationHelper/>
+      </DoubleVectorProperty>
+
+      <StringVectorProperty
+         name="PatchArrayInfo"
+         information_only="1">
+        <ArraySelectionInformationHelper attribute_name="Patch"/>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+         name="MeshRegions"
+         command="SetPatchArrayStatus"
+         number_of_elements="0"
+         repeat_command="1"
+         number_of_elements_per_command="2"
+         element_types="2 0"
+         information_property="PatchArrayInfo"
+         animateable="0">
+        <ArraySelectionDomain name="array_list">
+          <RequiredProperties>
+            <Property name="PatchArrayInfo" function="ArrayList"/>
+          </RequiredProperties>
+        </ArraySelectionDomain>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+         name="CellArrayInfo"
+         information_only="1">
         <ArraySelectionInformationHelper attribute_name="Cell"/>
       </StringVectorProperty>
-      <StringVectorProperty name="CellArrayStatus"
-                            command="SetCellArrayStatus"
-                            number_of_elements="0" 
-                            repeat_command="1"
-                            number_of_elements_per_command="2"
-                            element_types="2 0" 
-                            information_property="CellArrayInfo"
-                            label="Cell Arrays">
+      <StringVectorProperty
+         name="CellArrays"
+         command="SetCellArrayStatus"
+         number_of_elements="0"
+         repeat_command="1"
+         number_of_elements_per_command="2"
+         element_types="2 0"
+         information_property="CellArrayInfo"
+         animateable="0">
         <ArraySelectionDomain name="array_list">
           <RequiredProperties>
             <Property name="CellArrayInfo" function="ArrayList"/>
           </RequiredProperties>
         </ArraySelectionDomain>
-        <Documentation>
-          Select which cell-centered arrays to read.
-        </Documentation>
       </StringVectorProperty>
-      <IntVectorProperty name="TimeStepRangeInfo"
-                         command="GetTimeStepRange"
-                         information_only="1">
-        <SimpleIntInformationHelper/>
-      </IntVectorProperty>
-      <IntVectorProperty name="TimeStep"
-                           command="SetTimeStep"
-                           number_of_elements="1"
-                           animateable="1"
-                           default_values="0">
-        <IntRangeDomain name="range">
+
+      <StringVectorProperty
+         name="PointArrayInfo"
+         information_only="1">
+        <ArraySelectionInformationHelper attribute_name="Point"/>
+      </StringVectorProperty>
+      <StringVectorProperty
+         name="PointArrays"
+         command="SetPointArrayStatus"
+         number_of_elements="0"
+         repeat_command="1"
+         number_of_elements_per_command="2"
+         element_types="2 0"
+         information_property="PointArrayInfo"
+         animateable="0">
+        <ArraySelectionDomain name="array_list">
           <RequiredProperties>
-            <Property name="TimeStepRangeInfo" function="Range"/>
+            <Property name="PointArrayInfo" function="ArrayList"/>
           </RequiredProperties>
-        </IntRangeDomain>
+        </ArraySelectionDomain>
+      </StringVectorProperty>
+
+      <StringVectorProperty
+         name="LagrangianArrayInfo"
+         information_only="1">
+        <ArraySelectionInformationHelper attribute_name="Lagrangian"/>
+      </StringVectorProperty>
+      <StringVectorProperty
+         name="LagrangianArrays"
+         command="SetLagrangianArrayStatus"
+         number_of_elements="0"
+         repeat_command="1"
+         number_of_elements_per_command="2"
+         element_types="2 0"
+         information_property="LagrangianArrayInfo"
+         animateable="0">
+        <ArraySelectionDomain name="array_list">
+          <RequiredProperties>
+            <Property name="LagrangianArrayInfo" function="ArrayList"/>
+          </RequiredProperties>
+        </ArraySelectionDomain>
+      </StringVectorProperty>
+
+      <IntVectorProperty
+         name="CacheMesh"
+         command="SetCacheMesh"
+         number_of_elements="1"
+         default_values="1"
+         label="Cache mesh"
+         animateable="0">
+        <BooleanDomain name="bool"/>
         <Documentation>
-          Set the current timestep.
+          Cache the OpenFOAM mesh between GUI selection changes.
         </Documentation>
       </IntVectorProperty>
-      <DoubleVectorProperty 
-          name="TimestepValues"
-          repeatable="1"
-          information_only="1">
-        <TimeStepsInformationHelper/>
-      </DoubleVectorProperty>
 
-     <Hints>
-      <ReaderFactory extensions="foam"
-          file_description="OpenFOAM Files" />
-     </Hints>
+      <IntVectorProperty
+         name="DecomposePolyhedra"
+         command="SetDecomposePolyhedra"
+         number_of_elements="1"
+         default_values="1"
+         label="Decompose polyhedra"
+         animateable="0">
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Decompose polyhedra into tetrahedra and pyramids.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+         name="ListTimeStepsByControlDict"
+         command="SetListTimeStepsByControlDict"
+         number_of_elements="1"
+         default_values="0"
+         label="List timesteps according to controlDict"
+         animateable="0">
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          List time directories listed according to the settings in controlDict.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+         name="PositionsIsIn13Format"
+         command="SetPositionsIsIn13Format"
+         number_of_elements="1"
+         default_values="0"
+         label="Lagrangian positions are in OF 1.3 binary format"
+         animateable="0">
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Set if Lagrangian positions files are in OpenFOAM 1.3 binary format.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+         name="ReadZones"
+         command="SetReadZones"
+         number_of_elements="1"
+         default_values="0"
+         label="Read zones"
+         animateable="0">
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Read point/face/cell-Zones?
+        </Documentation>
+      </IntVectorProperty>
+
+      <Hints>
+        <ReaderFactory extensions="foam"
+           file_description="OpenFOAM" />
+        <Property name="FileName" show="1"/>
+        <Property name="Refresh" show="0"/>
+      </Hints>
+
     </SourceProxy>
-    <!-- End of foam Reader -->
+    <!-- End of OpenFOAM Reader -->
 
     <!-- Beginning of MFIX Reader -->
     <SourceProxy name="MFIXReader" class="vtkMFIXReader">
@@ -5077,25 +5155,28 @@
      </IntVectorProperty>
 
      <Hints>
-      <ReaderFactory extensions="d3plot k lsdyna" file_description="LSDyna" />
+      <ReaderFactory extensions="k lsdyna d3plot"
+        filename_patterns="d3plot"
+        file_description="LSDyna" />
      </Hints>
 
    </SourceProxy>
    <!-- End of LSDyna Reader -->
 
     <SourceProxy name="netCDFReader"
-                 class="vtkNetCDFCOARDSReader"
+                 class="vtkNetCDFCFReader"
                  label="NetCDF Reader">
       <Documentation short_help="Read regular arrays from netCDF files."
-                     long_help="Read regular arrays from netCDF files.  Will also read any topological information specified byt he COARDS convention.">
+                     long_help="Read regular arrays from netCDF files.  Will also read any topological information specified by the COARDS and CF conventions.">
         Reads arrays from netCDF files into structured VTK data sets.  In
         the absence of any other information, the files will be read as
         image data.  This reader will also look for meta information
-        specified by the COARDS convention that specify things like
-        topology and time.  This information can cause the output to be a
-        nonuniform rectilinear grid or curvilinear (structured) grid.
-        Details on the COARDS convention can be found at
-        http://ferret.wrc.noaa.gov/noaa_coop/coop_cdf_profile.html.
+        specified by the CF convention that specify things like topology
+        and time.  This information can cause the output to be a nonuniform
+        rectilinear grid or curvilinear (structured) grid.  Details on the
+        CF convention can be found at http://cf-pcmdi.llnl.gov/.  It should
+        be noted that the CF convention is a superset of the COARDS
+        convention, so COARDS conventions will also be recognized.
       </Documentation>
 
       <StringVectorProperty name="FileName"
@@ -5108,29 +5189,56 @@
         </Documentation>
       </StringVectorProperty>
 
+      <StringVectorProperty name="DimensionInfo"
+                            command="GetAllDimensions"
+                            information_only="1">
+        <StringArrayHelper />
+      </StringVectorProperty>
+
+      <StringVectorProperty name="Dimensions"
+                            command="SetDimensions"
+                            number_of_elements="1"
+                            animatelable="0">
+        <StringListDomain name="array_list">
+          <RequiredProperties>
+            <Property name="DimensionInfo" function="ArrayList" />
+          </RequiredProperties>
+        </StringListDomain>
+        <Documentation>
+          Load the grid with the given dimensions.  Any arrays that conform
+          to these dimensions will be loaded.
+        </Documentation>
+      </StringVectorProperty>
+
+      <StringVectorProperty name="VariableDimensionInfo"
+                            command="GetVariableDimensions"
+                            information_only="1">
+        <StringArrayHelper />
+      </StringVectorProperty>
+
       <StringVectorProperty name="VariableArrayInfo"
                             information_only="1">
         <ArraySelectionInformationHelper attribute_name="Variable"/>
       </StringVectorProperty>
 
-      <StringVectorProperty name="VariableArrayStatus"
-                            command="SetVariableArrayStatus"
-                            number_of_elements="0"
-                            repeat_command="1"
-                            number_of_elements_per_command="2"
-                            element_types="2 0"
-                            information_property="VariableArrayInfo"
-                            label="Variables">
-        <ArraySelectionDomain name="array_list">
-          <RequiredProperties>
-            <Property name="VariableArrayInfo" function="ArrayList" />
-          </RequiredProperties>
-        </ArraySelectionDomain>
-        <Documentation>
-          This property lists which netCDF variables to load.
-        </Documentation>
-      </StringVectorProperty>
-
+      <!-- <StringVectorProperty name="VariableArrayStatus" -->
+      <!--                       command="SetVariableArrayStatus" -->
+      <!--                       number_of_elements="0" -->
+      <!--                       repeat_command="1" -->
+      <!--                       number_of_elements_per_command="2" -->
+      <!--                       element_types="2 0" -->
+      <!--                       information_property="VariableArrayInfo" -->
+      <!--                       label="Variables"> -->
+      <!--   <ArraySelectionDomain name="array_list"> -->
+      <!--     <RequiredProperties> -->
+      <!--       <Property name="VariableArrayInfo" function="ArrayList" /> -->
+      <!--     </RequiredProperties> -->
+      <!--   </ArraySelectionDomain> -->
+      <!--   <Documentation> -->
+      <!--     This property lists which netCDF variables to load. -->
+      <!--   </Documentation> -->
+      <!-- </StringVectorProperty> -->
+ 
       <IntVectorProperty name="SphericalCoordinates"
                          command="SetSphericalCoordinates"
                          animateable="0"
@@ -5138,10 +5246,61 @@
                          default_values="1">
         <BooleanDomain name="bool" />
         <Documentation>
-          If on, then 3D data with latitude/longitude dimensions will be
+          If on, then data with latitude/longitude dimensions will be
           read in as curvilinear data shaped like spherical coordinates.
           If false, then the data will always be read in Cartesian
           coordinates.
+        </Documentation>
+      </IntVectorProperty>
+
+      <DoubleVectorProperty name="VerticalScale"
+                            command="SetVerticalScale"
+                            number_of_elements="1"
+                            default_values="1">
+        <Documentation>
+          The scale of the vertical component of spherical coordinates.  It
+          is common to write the vertical component with respect to
+          something other than the center of the sphere (for example, the
+          surface).  In this case, it might be necessary to scale and/or
+          bias the vertical height.  The height will become height*scale +
+          bias.  Keep in mind that if the positive attribute of the
+          vertical dimension is down, then the height is negated.  The
+          scaling will be adjusted if it results in invalid (negative)
+          vertical values.
+        </Documentation>
+      </DoubleVectorProperty>
+
+      <DoubleVectorProperty name="VerticalBias"
+                            command="SetVerticalBias"
+                            number_of_elements="1"
+                            default_values="0">
+        <Documentation>
+          The bias of the vertical component of spherical coordinates.  It
+          is common to write the vertical component with respect to
+          something other than the center of the sphere (for example, the
+          surface).  In this case, it might be necessary to scale and/or
+          bias the vertical height.  The height will become height*scale +
+          bias.  Keep in mind that if the positive attribute of the
+          vertical dimension is down, then the height is negated.  The
+          scaling will be adjusted if it results in invalid (negative)
+          vertical values.
+        </Documentation>
+      </DoubleVectorProperty>
+
+      <IntVectorProperty name="RepalceFillValueWithNan"
+                         command="SetReplaceFillValueWithNan"
+                         number_of_elements="1"
+                         default_values="0">
+        <BooleanDomain name="bool" />
+        <Documentation>
+          If on, any float or double variable read that has a _FillValue
+          attribute will have that fill value replaced with a not-a-number
+          (NaN) value.  The advantage of setting these to NaN values is
+          that, if implemented properly by the system and careful math
+          operations are used, they can implicitly be ignored by
+          calculations like finding the range of the values.  That said,
+          this option should be used with caution as VTK does not fully
+          support NaN values and therefore odd calculations may occur.
         </Documentation>
       </IntVectorProperty>
 

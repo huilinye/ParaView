@@ -19,6 +19,7 @@ IF (VTK_USE_RENDERING AND VTK_USE_DISPLAY)
       rendererSource
       rotations
       ScalarBar
+      SurfacePickerWithTexture
       TestFlyTo
       TestLeaderActor2D
       TestOnePoint
@@ -29,6 +30,7 @@ IF (VTK_USE_RENDERING AND VTK_USE_DISPLAY)
       TestTiling
       TestTriangleStripCellColor
       TestWindowToImageTransparency
+      TexturedSphere
     )
     IF(VTK_USE_TK)
       SET(tests ${tests}

@@ -191,8 +191,11 @@ void pqParaViewMenuBuilders::buildToolsMenu(QMenu& menu)
   new pqManageLinksReaction(menu.addAction("Manage Links") <<
     pqSetName("actionToolsManageLinks"));
   //<addaction name="actionToolsAddCameraLink" />
+#ifdef BUILD_SHARED_LIBS
+  // Add support for importing plugins only if ParaView was built shared.
   new pqManagePluginsReaction(menu.addAction("Manage Plugins") <<
     pqSetName("actionManage_Plugins"));
+#endif
   menu.addSeparator();
   //<addaction name="actionToolsDumpWidgetNames" />
   new pqTestingReaction(menu.addAction("Record Test")
@@ -204,6 +207,9 @@ void pqParaViewMenuBuilders::buildToolsMenu(QMenu& menu)
   new pqTestingReaction(menu.addAction("Lock View Size")
     << pqSetName("actionTesting_Window_Size"),
     pqTestingReaction::LOCK_VIEW_SIZE);
+  new pqTestingReaction(menu.addAction("Lock View Size Custom...")
+    << pqSetName("actionTesting_Window_Size_Custom"),
+    pqTestingReaction::LOCK_VIEW_SIZE_CUSTOM);
   menu.addSeparator();
   new pqTimerLogReaction(menu.addAction("Timer Log")
     << pqSetName("actionToolsTimerLog"));
@@ -278,9 +284,6 @@ void pqParaViewMenuBuilders::buildHelpMenu(QMenu& menu)
 //-----------------------------------------------------------------------------
 void pqParaViewMenuBuilders::buildToolbars(QMainWindow& mainWindow)
 {
-  // So that on Mac the icons don't appear too big.
-  mainWindow.setIconSize(QSize(24, 24));
-
   QToolBar* mainToolBar = new pqMainControlsToolbar(&mainWindow)
     << pqSetName("MainControlsToolbar");
   mainToolBar->layout()->setSpacing(0);

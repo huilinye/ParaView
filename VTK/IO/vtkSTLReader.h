@@ -58,7 +58,7 @@ public:
   // Specify file name of stereo lithography file.
   vtkSetStringMacro(FileName);
   vtkGetStringMacro(FileName);
-
+      
   // Description:
   // Turn on/off merging of points/triangles.
   vtkSetMacro(Merging,int);
@@ -80,7 +80,7 @@ public:
   // Description:
   // Create default locator. Used to create one when none is specified.
   void CreateDefaultLocator();
-
+      
 protected:
   vtkSTLReader();
   ~vtkSTLReader();

@@ -24,6 +24,7 @@
 #define __vtkContextScene_h
 
 #include "vtkObject.h"
+#include "vtkWeakPointer.h" // Needed for weak pointer to the window.
 
 class vtkContext2D;
 class vtkContextItem;
@@ -73,6 +74,18 @@ public:
   vtkSetVector2Macro(Geometry, int);
 
   // Description:
+  // Get the width and height of the scene in pixels.
+  vtkGetVector2Macro(Geometry, int);
+
+  // Description:
+  // Get the width of the view
+  virtual int GetViewWidth();
+
+  // Description:
+  // Get the height of the view
+  virtual int GetViewHeight();
+
+  // Description:
   // Add the scene as an observer on the supplied interactor style.
   void SetInteractorStyle(vtkInteractorStyle *interactor);
 
@@ -108,6 +121,10 @@ protected:
   // Process a mouse button release event.
   virtual void ButtonReleaseEvent(int button, int x, int y);
 
+  // Description:
+  // Process a mouse wheel event where delta is the movement forward or back.
+  virtual void MouseWheelEvent(int delta, int x, int y);
+
   vtkAnnotationLink *AnnotationLink;
 
   // Store the chart dimensions - width, height of scene in pixels
@@ -124,7 +141,7 @@ protected:
   class Private;
   Private *Storage;
 
-  vtkRenderWindow *Window;
+  vtkWeakPointer<vtkRenderWindow> Window;
 
   // Description:
   // Perform translation and fill in the vtkContextMouseEvent struct.

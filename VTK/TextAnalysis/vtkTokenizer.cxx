@@ -112,20 +112,29 @@ const vtkTokenizer::DelimiterRanges vtkTokenizer::Punctuation()
   result.push_back(vtkstd::make_pair(0x003a, 0x0041)); // ASCII Punctuation and Symbols
   result.push_back(vtkstd::make_pair(0x005b, 0x0061)); // ASCII Punctuation and Symbols
   result.push_back(vtkstd::make_pair(0x007b, 0x007f)); // ASCII Punctuation and Symbols
+  result.push_back(vtkstd::make_pair(0x00a1, 0x00c0)); // Latin Punctuation and Symbols 
   result.push_back(vtkstd::make_pair(0x200c, 0x206f)); // General Punctuation
+  result.push_back(vtkstd::make_pair(0x2100, 0x214F)); // Letter-like Symbols
+  result.push_back(vtkstd::make_pair(0x3000, 0x3040)); // CJK Symbols and Punctuation
   result.push_back(vtkstd::make_pair(0xfeff, 0xff00)); // Zero-width no-break space, which has become a de-facto byte-order mark
+  result.push_back(vtkstd::make_pair(0xff01, 0xff10)); // Full-width punctuation
+  result.push_back(vtkstd::make_pair(0xff1a, 0xff21)); // Full-width punctuation
+  result.push_back(vtkstd::make_pair(0xff3b, 0xff41)); // Full-width punctuation
+  result.push_back(vtkstd::make_pair(0xff5b, 0xff65)); // Full-width and half-width punctuation
+  result.push_back(vtkstd::make_pair(0xffe0, 0xffef)); // Full-width and half-width symbols
 
   return result;
 }
 
 const vtkTokenizer::DelimiterRanges vtkTokenizer::Whitespace()
 {
-  // Unicode whitespace based on the charts available at http://www.unicode.org/charts/symbols.html
+  // Unicode whitespace based on the charts available at http://www.unicode.org/charts, including
+  // http://unicode.org/charts/PDF/U0000.pdf
 
   vtkTokenizer::DelimiterRanges result;
-  
-  result.push_back(vtkstd::make_pair(0x0009, 0x000e)); // HT, LF, VT, FF, CR
-  result.push_back(vtkstd::make_pair(0x0020, 0x0021)); // Space
+ 
+  result.push_back(vtkstd::make_pair(0x0000, 0x0021)); // Includes, among other things: NUL, HT, LF, VT, FF, CR, ESC, Space
+  result.push_back(vtkstd::make_pair(0x0080, 0x00a1)); // Latin control codes and no-break space.
   result.push_back(vtkstd::make_pair(0x2000, 0x200c)); // General Punctuation
 
   return result;

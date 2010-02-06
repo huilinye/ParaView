@@ -17,7 +17,6 @@ IF(VTK_USE_DISPLAY)
   SET(RenderingTestsWithArguments
     ${RenderingTestsWithArguments}
     LoadOpenGLExtension.cxx
-    SurfacePlusEdges.cxx
     TestActorLightingFlag.cxx
     TestAnimationScene.cxx
     TestBlurAndSobelPasses.cxx
@@ -29,7 +28,6 @@ IF(VTK_USE_DISPLAY)
     TestLabelPlacer.cxx
     TestLabelPlacer2D.cxx
     TestLabelPlacerCoincidentPoints.cxx
-    TestLabelPlacementMapper.cxx
     TestLabelPlacementMapper2D.cxx
     TestLabelPlacementMapperCoincidentPoints.cxx
     TestLightActor.cxx
@@ -74,6 +72,14 @@ IF(VTK_USE_DISPLAY)
       )
   ENDIF(VTK_DATA_ROOT)
 
+  IF(VTK_USE_DISPLAY AND VTK_DATA_ROOT)
+  SET(RenderingTestsWithArguments
+      ${RenderingTestsWithArguments}
+      SurfacePlusEdges.cxx
+      TestLabelPlacementMapper.cxx
+      )
+  ENDIF(VTK_USE_DISPLAY AND VTK_DATA_ROOT)
+
   IF (VTK_USE_GLSL_SHADERS)
     # Tests testing GLSL Shaders.
     SET(RenderingTestsWithArguments
@@ -81,6 +87,7 @@ IF(VTK_USE_DISPLAY)
       TestGenericVertexAttributesGLSLCxx.cxx
       TestGenericVertexAttributesGLSLAlphaBlending.cxx
       TestGenericVertexAttributesGLSLDepthPeelingPass.cxx
+      TestSurfaceLIC.cxx
       )
   ENDIF (VTK_USE_GLSL_SHADERS)
 

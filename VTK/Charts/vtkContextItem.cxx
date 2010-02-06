@@ -22,6 +22,7 @@
 #include "vtkInteractorStyle.h"
 #include "vtkInteractorStyleRubberBand2D.h"
 #include "vtkTransform2D.h"
+#include "vtkContextScene.h"
 #include "vtkObjectFactory.h"
 
 //-----------------------------------------------------------------------------
@@ -32,6 +33,7 @@ vtkCxxSetObjectMacro(vtkContextItem, Transform, vtkTransform2D)
 vtkContextItem::vtkContextItem()
 {
   this->Transform = NULL;//vtkTransform2D::New();
+  this->Scene = NULL;
   this->Opacity = 1.0;
 }
 
@@ -43,6 +45,22 @@ vtkContextItem::~vtkContextItem()
     this->Transform->Delete();
     this->Transform = NULL;
     }
+  this->SetScene(NULL);
+}
+
+//-----------------------------------------------------------------------------
+void vtkContextItem::SetScene(vtkContextScene *scene)
+{
+  // Cannot have a reference counted pointer to the scene as this causes a
+  // reference loop, where the scene and the item never get to a reference
+  // count of zero.
+  this->Scene = scene;
+}
+
+vtkContextScene* vtkContextItem::GetScene()
+{
+  // Return the underlying pointer
+  return this->Scene.GetPointer();
 }
 
 //-----------------------------------------------------------------------------
@@ -77,6 +95,12 @@ bool vtkContextItem::MouseButtonPressEvent(const vtkContextMouseEvent &)
 
 //-----------------------------------------------------------------------------
 bool vtkContextItem::MouseButtonReleaseEvent(const vtkContextMouseEvent &)
+{
+  return false;
+}
+
+//-----------------------------------------------------------------------------
+bool vtkContextItem::MouseWheelEvent(const vtkContextMouseEvent &, int)
 {
   return false;
 }

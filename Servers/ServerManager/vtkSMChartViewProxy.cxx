@@ -19,9 +19,9 @@
 #include "vtkQtChartMouseSelection.h"
 #include "vtkQtChartWidget.h"
 #include "vtkQtChartView.h"
+#include "vtkSMApplication.h"
 #include "vtkSMChartOptionsProxy.h"
 
-#include "vtkQtInitialization.h"
 #include <QWidget>
 
 vtkCxxRevisionMacro(vtkSMChartViewProxy, "$Revision$");
@@ -29,8 +29,7 @@ vtkCxxRevisionMacro(vtkSMChartViewProxy, "$Revision$");
 vtkSMChartViewProxy::vtkSMChartViewProxy()
 {
   this->ChartView = 0;
-
-  vtkQtInitialization::New()->Delete();
+  this->GetApplication()->EnsureQApplicationIsInitialized();
 }
 
 //----------------------------------------------------------------------------

@@ -32,10 +32,12 @@ ADD_LIBRARY(vtkPVPython
   vtkPVPythonOptions.cxx
   vtkPVProcessModulePythonHelper.cxx)
 
-ADD_EXECUTABLE(pvpython${PV_EXE_SUFFIX}
+add_executable_with_forwarding(PV_EXE_SUFFIX
+  pvpython
   pvpython.cxx)
 
-ADD_EXECUTABLE(pvbatch${PV_EXE_SUFFIX}
+add_executable_with_forwarding(PV_EXE_SUFFIX
+  pvbatch
   pvbatch.cxx)
 
 IF(CMAKE_SYSTEM_NAME MATCHES "AIX")
@@ -99,6 +101,8 @@ ELSE(UNIX)
   SET(PYTHON_MODULE_PREFIX "")
 ENDIF(UNIX)
 PYTHON_WRITE_MODULES_HEADER(${CMAKE_CURRENT_BINARY_DIR}/pvpythonmodules.h)
+# The PYTHON_ADD_MODULE macro stores the list of static modules in a global property
+GET_PROPERTY(PY_STATIC_MODULES_LIST GLOBAL PROPERTY PY_STATIC_MODULES_LIST)
 IF(PY_STATIC_MODULES_LIST)
   TARGET_LINK_LIBRARIES(vtkPVPythonInterpretor ${PY_STATIC_MODULES_LIST})
 ENDIF(PY_STATIC_MODULES_LIST)
@@ -147,9 +151,15 @@ INSTALL(TARGETS vtkPVPythonInterpretor vtkPVPython
 SET(PV_EXE_LIST pvpython pvbatch)
 FOREACH(pvexe ${PV_EXE_LIST})
   IF(NOT PV_INSTALL_NO_RUNTIME)
+    INSTALL(TARGETS ${pvexe}
+      DESTINATION ${PV_INSTALL_BIN_DIR}
+      COMPONENT Runtime)
+    IF (PV_EXE_SUFFIX)
+      # Shared forwarding enabled.
       INSTALL(TARGETS ${pvexe}${PV_EXE_SUFFIX} 
-        DESTINATION ${PV_EXE_INSTALL}
+        DESTINATION ${PV_INSTALL_LIB_DIR}
         COMPONENT Runtime)
+    ENDIF (PV_EXE_SUFFIX)
   ENDIF(NOT PV_INSTALL_NO_RUNTIME)
 ENDFOREACH(pvexe)
 
@@ -158,20 +168,3 @@ ENDFOREACH(pvexe)
 INCLUDE (${VTK_BINARY_DIR}/Wrapping/Tcl/LocalUserOptions.cmake OPTIONAL)
 INCLUDE (${VTK_SOURCE_DIR}/Wrapping/Tcl/LocalUserOptions.cmake OPTIONAL)
 
-# Add shared link forwarding executables if necessary.
-IF(PV_NEED_SHARED_FORWARD)
-  FOREACH(pvexe ${PV_EXE_LIST})
-    SET(PV_FORWARD_EXE ${pvexe}${PV_EXE_SUFFIX})
-    CONFIGURE_FILE(
-      ${ParaView_SOURCE_DIR}/Servers/Executables/pv-forward.c.in
-      ${CMAKE_CURRENT_BINARY_DIR}/${pvexe}-forward.c
-      @ONLY IMMEDIATE)
-    ADD_EXECUTABLE(${pvexe} ${CMAKE_CURRENT_BINARY_DIR}/${pvexe}-forward.c)
-    ADD_DEPENDENCIES(${pvexe} ${pvexe}${PV_EXE_SUFFIX})
-    IF(NOT PV_INSTALL_NO_RUNTIME)
-      INSTALL(TARGETS ${pvexe}
-        DESTINATION ${PV_INSTALL_BIN_DIR}
-        COMPONENT Runtime)
-    ENDIF(NOT PV_INSTALL_NO_RUNTIME)
-  ENDFOREACH(pvexe)
-ENDIF(PV_NEED_SHARED_FORWARD)

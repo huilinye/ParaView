@@ -65,8 +65,17 @@ public:
   vtkIdType GetExtent() const;
 
   // Description:
-  // Serialization  
-  friend ostream& operator<<(ostream& stream, const vtkArrayRange& rhs);
+  // Returns true iff the given coordinate falls within this range.
+  bool Contains(const vtkIdType coordinate) const;
+
+  // Description:
+  // Equality comparisons.
+  VTK_COMMON_EXPORT friend bool operator==(const vtkArrayRange& lhs, const vtkArrayRange& rhs);
+  VTK_COMMON_EXPORT friend bool operator!=(const vtkArrayRange& lhs, const vtkArrayRange& rhs);
+
+  // Description:
+  // Serialization.
+  VTK_COMMON_EXPORT friend ostream& operator<<(ostream& stream, const vtkArrayRange& rhs);
 
 private:
   // Description:

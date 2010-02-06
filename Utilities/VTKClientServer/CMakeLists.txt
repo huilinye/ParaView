@@ -98,12 +98,7 @@ IF(NOT PV_INSTALL_NO_DEVELOPMENT)
       "${CMAKE_CURRENT_SOURCE_DIR}/CMake/vtkWrapClientServer.cxx.in")
   INSTALL(
       FILES ${configFiles}
-      DESTINATION ${PV_INSTALL_LIB_DIR}
-      COMPONENT Development)
-  # Wrapper exec
-  INSTALL(
-      FILES "${ParaView_BINARY_DIR}/bin/vtkWrapClientServer"
-      DESTINATION ${PV_INSTALL_BIN_DIR}
+      DESTINATION ${PV_INSTALL_CMAKE_DIR}
       COMPONENT Development)
 ENDIF(NOT PV_INSTALL_NO_DEVELOPMENT)
 

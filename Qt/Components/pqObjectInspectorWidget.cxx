@@ -60,6 +60,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqExtractCTHPartsPanel.h"
 #include "pqGlyphPanel.h"
 #include "pqLoadedFormObjectPanel.h"
+#include "pqNetCDFPanel.h"
 #include "pqObjectBuilder.h"
 #include "pqObjectPanelInterface.h"
 #include "pqParticleTracerPanel.h"
@@ -135,6 +136,11 @@ public:
         {
         return new pqExtractCTHPartsPanel(proxy, p);
         }
+      if(QString("RectilinearGridConnectivity") == proxy->getProxy()->GetXMLName())
+        {
+        // allow RectilinearGridConnectivity to reuse the panel of CTHPart
+        return new pqExtractCTHPartsPanel(proxy, p);
+        }
       }
     if(QString("sources") == proxy->getProxy()->GetXMLGroup())
       {
@@ -150,10 +156,14 @@ public:
         {
         return new pqXDMFPanel(proxy, p);
         }
+      if(QString("netCDFReader") == proxy->getProxy()->GetXMLName())
+        {
+        return new pqNetCDFPanel(proxy, p);
+        }
 #ifdef PARAVIEW_USE_SILO
       if(QString("SiloReader") == proxy->getProxy()->GetXMLName())
         {
-        return new pqSiloPanel(proxy, p);
+ 50
         }
 #endif
       }
@@ -175,7 +185,8 @@ public:
          QString("ExtractSelection") == proxy->getProxy()->GetXMLName() ||
          QString("ExtractSelectionOverTime") == proxy->getProxy()->GetXMLName() ||
          QString("Contour") == proxy->getProxy()->GetXMLName() || 
-         QString("CTHPart") == proxy->getProxy()->GetXMLName()
+         QString("CTHPart") == proxy->getProxy()->GetXMLName() ||
+         QString("RectilinearGridConnectivity") == proxy->getProxy()->GetXMLName()
         )
         {
         return true;
@@ -185,6 +196,7 @@ public:
       {
       if (QString("ExodusIIReader") == proxy->getProxy()->GetXMLName() ||
          QString("ExodusRestartReader") == proxy->getProxy()->GetXMLName() ||
+         QString("netCDFReader") == proxy->getProxy()->GetXMLName() ||
 #ifdef PARAVIEW_USE_SILO
          QString("SiloReader") == proxy->getProxy()->GetXMLName() ||
 #endif
@@ -515,19 +527,12 @@ void pqObjectInspectorWidget::accept()
     this->CurrentPanel->accept();
     }
 
-  pqView* activeView = this->view();
   foreach (pqProxy* proxy_to_show, proxies_to_show)
     {
-    if (!activeView)
-      {
-      // if the current frame is empty, try to use the most recently created
-      // frame when accepting multiple sources at the same time.
-      activeView = this->view();
-      }
     pqPipelineSource* source = qobject_cast<pqPipelineSource*>(proxy_to_show);
     if (source)
       {
-      this->show(source, activeView);
+      this->show(source);
       pqProxyModifiedStateUndoElement* elem =
         pqProxyModifiedStateUndoElement::New();
       elem->MadeUnmodified(source);
@@ -695,7 +700,7 @@ void pqObjectInspectorWidget::showHelp()
 }
 
 //-----------------------------------------------------------------------------
-void pqObjectInspectorWidget::show(pqPipelineSource* source, pqView* activeview)
+void pqObjectInspectorWidget::show(pqPipelineSource* source)
 {
   pqDisplayPolicy* displayPolicy = 
     pqApplicationCore::instance()->getDisplayPolicy();
@@ -709,18 +714,18 @@ void pqObjectInspectorWidget::show(pqPipelineSource* source, pqView* activeview)
   for (int cc=0; cc < source->getNumberOfOutputPorts(); cc++)
     {
     pqDataRepresentation* repr = displayPolicy->createPreferredRepresentation(
-      source->getOutputPort(cc), activeview, false);
+      source->getOutputPort(cc), this->view(), false);
     if (!repr || !repr->getView())
       {
       continue;
       }
 
-    pqView* view = repr->getView(); 
+    pqView* cur_view = repr->getView(); 
     pqPipelineFilter* filter = qobject_cast<pqPipelineFilter*>(source);
     if (filter)
       {
-      filter->hideInputIfRequired(view);
+      filter->hideInputIfRequired(cur_view);
       }
-    view->render(); // these renders are collapsed.
+    cur_view->render(); // these renders are collapsed.
     }
 }

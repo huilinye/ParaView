@@ -58,6 +58,10 @@ public:
         x = interactor->GetEventPosition()[0];
         y = interactor->GetEventPosition()[1];
         }
+      else
+        {
+        return;
+        }
 
       switch (eventId)
         {
@@ -81,6 +85,14 @@ public:
           break;
         case vtkCommand::RightButtonReleaseEvent :
           this->Target->ButtonReleaseEvent(2, x, y);
+          break;
+        case vtkCommand::MouseWheelForwardEvent :
+          // There is a forward and a backward event - not clear on deltas...
+          this->Target->MouseWheelEvent(1, x, y);
+          break;
+        case vtkCommand::MouseWheelBackwardEvent :
+          // There is a forward and a backward event - not clear on deltas...
+          this->Target->MouseWheelEvent(-1, x, y);
           break;
         case vtkCommand::SelectionChangedEvent :
           this->Target->ProcessSelectionEvent(caller, callData);
@@ -111,7 +123,6 @@ public:
 vtkCxxRevisionMacro(vtkContextScene, "$Revision$");
 vtkStandardNewMacro(vtkContextScene);
 vtkCxxSetObjectMacro(vtkContextScene, AnnotationLink, vtkAnnotationLink);
-vtkCxxSetObjectMacro(vtkContextScene, Window, vtkRenderWindow);
 
 //-----------------------------------------------------------------------------
 vtkContextScene::vtkContextScene()
@@ -131,14 +142,21 @@ vtkContextScene::~vtkContextScene()
 {
   this->Observer->Delete();
   this->Observer = NULL;
-  this->SetWindow(NULL);
+  this->Window = NULL;
   size_t size = this->Storage->items.size();
   for (size_t i = 0; i < size; ++i)
     {
-    this->Storage->items[i]->UnRegister(this);
+    this->Storage->items[i]->Delete();
+    this->Storage->items[i] = NULL;
     }
   delete this->Storage;
   this->Storage = NULL;
+}
+
+//-----------------------------------------------------------------------------
+void vtkContextScene::SetWindow(vtkRenderWindow *window)
+{
+  this->Window = window;
 }
 
 //-----------------------------------------------------------------------------
@@ -158,6 +176,7 @@ bool vtkContextScene::Paint(vtkContext2D *painter)
 void vtkContextScene::AddItem(vtkContextItem *item)
 {
   item->Register(this);
+  item->SetScene(this);
   this->Storage->items.push_back(item);
   this->Storage->itemState.push_back(false);
 }
@@ -178,6 +197,32 @@ vtkContextItem * vtkContextScene::GetItem(int index)
   else
     {
     return NULL;
+    }
+}
+
+//-----------------------------------------------------------------------------
+int vtkContextScene::GetViewWidth()
+{
+  if (this->Window)
+    {
+    return this->Window->GetSize()[0];
+    }
+  else
+    {
+    return 0;
+    }
+}
+
+//-----------------------------------------------------------------------------
+int vtkContextScene::GetViewHeight()
+{
+  if (this->Window)
+    {
+    return this->Window->GetSize()[1];
+    }
+  else
+    {
+    return 0;
     }
 }
 
@@ -309,6 +354,34 @@ void vtkContextScene::ButtonReleaseEvent(int button, int x, int y)
     this->Storage->items[this->Storage->itemMousePressCurrent]->MouseButtonReleaseEvent(event);
     this->Storage->itemMousePressCurrent = -1;
     event.Button = -1;
+    }
+}
+
+void vtkContextScene::MouseWheelEvent(int delta, int x, int y)
+{
+  int size = static_cast<int>(this->Storage->items.size());
+  vtkContextMouseEvent &event = this->Storage->Event;
+  event.ScreenPos[0] = event.LastScreenPos[0] = x;
+  event.ScreenPos[1] = event.LastScreenPos[1] = y;
+  event.ScenePos[0] = event.LastScenePos[0] = x;
+  event.ScenePos[1] = event.LastScenePos[1] = y;
+  event.Button = 1;
+  for (int i = size-1; i >= 0; --i)
+    {
+    this->PerformTransform(this->Storage->items[i]->GetTransform(), event);
+    if (this->Storage->items[i]->Hit(event))
+      {
+      if (this->Storage->items[i]->MouseWheelEvent(event, delta))
+        {
+        // The event was accepted - stop propagating
+        break;
+        }
+      }
+    }
+
+  if (this->Window)
+    {
+    this->Window->Render();
     }
 }
 

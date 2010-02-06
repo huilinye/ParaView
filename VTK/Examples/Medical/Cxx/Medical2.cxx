@@ -32,12 +32,12 @@
 #include <vtkContourFilter.h>
 #include <vtkSmartPointer.h>
 
-int main (int argc, char **argv)
+int main (int argc, char *argv[])
 {
   if (argc < 2)
     {
     cout << "Usage: " << argv[0] << " DATADIR/headsq/quarter" << endl;
-    return 1;
+    return EXIT_FAILURE;
     }
 
   // Create the renderer, the render window, and the interactor. The renderer
@@ -72,7 +72,7 @@ int main (int argc, char **argv)
   // skin of the patient. Once generated, a vtkPolyDataNormals filter is
   // is used to create normals for smooth surface shading during rendering.
   // The triangle stripper is used to create triangle strips from the
-  // isosurface; these render much faster on may systems.
+  // isosurface; these render much faster on many systems.
   vtkSmartPointer<vtkContourFilter> skinExtractor =
     vtkSmartPointer<vtkContourFilter>::New();
   skinExtractor->SetInputConnection(v16->GetOutputPort());
@@ -153,6 +153,8 @@ int main (int argc, char **argv)
   aCamera->SetPosition (0, 1, 0);
   aCamera->SetFocalPoint (0, 0, 0);
   aCamera->ComputeViewPlaneNormal();
+  aCamera->Azimuth(30.0);
+  aCamera->Elevation(30.0);
 
   // Actors are added to the renderer. An initial camera view is created.
   // The Dolly() method moves the camera towards the FocalPoint,
@@ -177,10 +179,9 @@ int main (int argc, char **argv)
   // between the planes is actually rendered.
   aRenderer->ResetCameraClippingRange ();
 
-  // Set a background color for the renderer and set the size of the
-  // render window (expressed in pixels).
+  // Initialize the event loop and then start it.
   iren->Initialize();
   iren->Start(); 
 
-  return 0;
+  return EXIT_SUCCESS;
 }

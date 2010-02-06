@@ -127,6 +127,7 @@
        </ProxyGroupDomain>
        <DataTypeDomain name="input_type">
          <DataType value="vtkDataSet"/>
+         <DataType value="vtkTable"/>
          <DataType value="vtkCompositeDataSet"/>
        </DataTypeDomain>
        <Documentation>
@@ -2038,43 +2039,155 @@ attributes of the fragments.
       </InputProperty>
    <!-- End Grid Fragment -->
    </SourceProxy>
-
+      
   <!-- ==================================================================== -->
-   <SourceProxy name="AMRDualContour" class="vtkAMRDualContour"
-      label="AMR Contour">
+   <SourceProxy name="RectilinearGridConnectivity" class="vtkRectilinearGridConnectivity"
+     label="Rectilinear Grid Connectivity">
      <Documentation
-       short_help="Iso surface cell array."
-       long_help="Crack free iso surface using dual grid.">
+       short_help="Parallel fragments extraction and attributes integration on rectilinear grids."
+       long_help="Parallel fragments extraction and attributes integration on rectilinear grids.">
+         Extracts material fragments from multi-block vtkRectilinearGrid datasets 
+         based on the selected volume fraction array(s) and a fraction isovalue and 
+         integrates the associated attributes.
      </Documentation>
+       
      <InputProperty
-        name="Input"
-        command="SetInputConnection">
-           <ProxyGroupDomain name="groups">
-             <Group name="sources"/>
-             <Group name="filters"/>
-           </ProxyGroupDomain>
-           <DataTypeDomain name="input_type">
-             <DataType value="vtkCompositeDataSet"/>
-           </DataTypeDomain>
-           <InputArrayDomain name="input_array" attribute_type="cell"
-                             number_of_components="1"/>
+       name="Input"
+       command="SetInputConnection">
+         <ProxyGroupDomain name="groups">
+           <Group name="sources"/>
+           <Group name="filters"/>
+         </ProxyGroupDomain>
+         
+         <DataTypeDomain name="input_type">
+           <DataType value="vtkRectilinearGrid"/>
+           <DataType value="vtkCompositeDataSet"/>
+         </DataTypeDomain>
+
+         <InputArrayDomain name="input_array" attribute_type="cell"
+                           number_of_components="1"/>
+     </InputProperty>
+     
+     <StringVectorProperty 
+       name="AddDoubleVolumeArrayName"
+       command="AddDoubleVolumeArrayName" 
+       clean_command="RemoveDoubleVolumeArrayNames"
+       repeat_command="1"
+       number_of_elements_per_command="1"
+       label="Double Volume Arrays">
+       <Documentation>
+         This property specifies the name(s) of the volume fraction array(s) for generating parts.
+       </Documentation>
+       <ArrayListDomain name="array_list" attribute_type="Scalars" data_type="VTK_DOUBLE" >
+         <RequiredProperties>
+           <Property name="Input" function="Input"/>
+         </RequiredProperties>
+       </ArrayListDomain>
+       <Hints>
+         <!-- This overrides the GUI's default mechanism to
+           not set the default value for this property
+           using the domain when the proxy is created -->
+         <NoDefault />
+       </Hints>
+     </StringVectorProperty> 
+
+     <StringVectorProperty 
+       name="AddFloatVolumeArrayName"
+       command="AddFloatVolumeArrayName" 
+       clean_command="RemoveFloatVolumeArrayNames"
+       repeat_command="1"
+       number_of_elements_per_command="1"
+       label="Float Volume Arrays">
+       <Documentation>
+         This property specifies the name(s) of the volume fraction array(s) for generating parts.
+       </Documentation>
+       <ArrayListDomain name="array_list" attribute_type="Scalars" data_type="VTK_FLOAT" >
+         <RequiredProperties>
+           <Property name="Input" function="Input"/>
+         </RequiredProperties>
+       </ArrayListDomain>
+       <Hints>
+         <!-- This overrides the GUI's default mechanism to
+           not set the default value for this property
+           using the domain when the proxy is created -->
+         <NoDefault />
+       </Hints>
+     </StringVectorProperty> 
+
+     <StringVectorProperty 
+       name="AddUnsignedCharVolumeArrayName"
+       command="AddUnsignedCharVolumeArrayName" 
+       clean_command="RemoveUnsignedCharVolumeArrayNames"
+       repeat_command="1"
+       number_of_elements_per_command="1"
+       label="Unsigned Character Volume Arrays">
+       <Documentation>
+         This property specifies the name(s) of the volume fraction array(s) for generating parts.
+       </Documentation>
+       <ArrayListDomain name="array_list" attribute_type="Scalars" data_type="VTK_UNSIGNED_CHAR" >
+         <RequiredProperties>
+           <Property name="Input" function="Input"/>
+         </RequiredProperties>
+       </ArrayListDomain>
+       <Hints>
+         <!-- This overrides the GUI's default mechanism to
+           not set the default value for this property
+           using the domain when the proxy is created -->
+         <NoDefault />
+       </Hints>
+     </StringVectorProperty> 
+
+     <DoubleVectorProperty
+       name="VolumeFractionSurfaceValue"
+       command="SetVolumeFractionSurfaceValue"
+       number_of_elements="1"
+       default_values="0.1"
+       label="Volume Fraction Value">
+       <DoubleRangeDomain name="range" min="0" max="1" />
+       <Documentation>
+         The value of this property is the volume fraction value for the surface.
+       </Documentation>
+     </DoubleVectorProperty>
+    
+   <!-- End Rectilinear Grid Connectivity -->
+   </SourceProxy>
+
+    <!-- ==================================================================== -->
+    <SourceProxy name="AMRDualClip" class="vtkAMRDualClip"
+       label="AMR Clip">
+      <Documentation
+        short_help="Clip with decimation."
+        long_help="Clip with scalars.  Tetrahedra.">
+      </Documentation>
+      <InputProperty
+         name="Input"
+         command="SetInputConnection">
+        <ProxyGroupDomain name="groups">
+          <Group name="sources"/>
+          <Group name="filters"/>
+        </ProxyGroupDomain>
+        <DataTypeDomain name="input_type">
+          <DataType value="vtkCompositeDataSet"/>
+        </DataTypeDomain>
+        <InputArrayDomain name="input_array" attribute_type="cell"
+                          number_of_components="1"/>
       </InputProperty>
 
-      <StringVectorProperty 
-        name="SelectInputScalars" 
+      <StringVectorProperty
+        name="SelectInputScalars"
         command="SetInputArrayToProcess"
         number_of_elements="5"
         element_types="0 0 0 0 2"
         animateable="0"
         label="Contour By">
-          <ArrayListDomain name="array_list" attribute_type="Scalars">
-            <RequiredProperties>
-               <Property name="Input" function="Input"/>
-            </RequiredProperties>
-          </ArrayListDomain>
-          <Documentation>
-            This property specifies the name of the cell scalar array from which the contour filter will compute isolines and/or isosurfaces.
-          </Documentation>
+        <ArrayListDomain name="array_list" attribute_type="Scalars">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          This property specifies the name of the cell scalar array from which the clip filter will compute clipped cells.
+        </Documentation>
       </StringVectorProperty>
 
       <DoubleVectorProperty
@@ -2082,84 +2195,189 @@ attributes of the fragments.
         command="SetIsoValue"
         label="Isosurface"
         number_of_elements="1"
-        default_values="1" > 
+        default_values="1" >
         animateable="1">
-          <ArrayRangeDomain name="scalar_range">
-            <RequiredProperties>
-               <Property name="Input" function="Input"/>
-               <Property name="SelectInputScalars" function="ArraySelection"/>
-            </RequiredProperties>
-          </ArrayRangeDomain>
-          <Documentation>
-            This property specifies the values at which to compute the isosurface.
-          </Documentation>
+        <ArrayRangeDomain name="scalar_range">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+            <Property name="SelectInputScalars" function="ArraySelection"/>
+          </RequiredProperties>
+        </ArrayRangeDomain>
+        <Documentation>
+          This property specifies the values at which to compute the isosurface.
+        </Documentation>
       </DoubleVectorProperty>
-      
-      <IntVectorProperty 
-        name="Capping" 
-        command="SetEnableCapping" 
+
+      <IntVectorProperty
+        name="DegenerateCells"
+        command="SetEnableDegenerateCells"
         number_of_elements="1"
         animateable="1"
-        default_values="1" > 
-       <BooleanDomain name="bool"/>
-       <Documentation>
-         If this property is on, the the boundary of the data set is capped.
-       </Documentation>
+        default_values="1" >
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          If this property is on, a transition mesh between levels is created.
+        </Documentation>
       </IntVectorProperty>
-      
-      <IntVectorProperty 
-        name="DegenerateCells" 
-        command="SetEnableDegenerateCells" 
+
+      <IntVectorProperty
+        name="MultiprocessCommunication"
+        command="SetEnableMultiProcessCommunication"
         number_of_elements="1"
         animateable="1"
-        default_values="1" > 
-       <BooleanDomain name="bool"/>
-       <Documentation>
-         If this property is on, a transition mesh between levels is created.
-       </Documentation>
+        default_values="1" >
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          If this property is off, each process executes independantly.
+        </Documentation>
       </IntVectorProperty>
 
-     <IntVectorProperty
-       name="MultiprocessCommunication"
-       command="SetEnableMultiProcessCommunication"
-       number_of_elements="1"
-       animateable="1"
-       default_values="1" >
-       <BooleanDomain name="bool"/>
-       <Documentation>
-         If this property is off, each process executes independantly.
-       </Documentation>
-     </IntVectorProperty>
-     
-     <IntVectorProperty
-       name="Triangulate"
-       command="SetTriangulateCap"
-       number_of_elements="1"
-       animateable="1"
-       default_values="1" >
-       <BooleanDomain name="bool"/>
-       <Documentation>
-         Use triangles instead of quads on capping surfaces.
-       </Documentation>
-     </IntVectorProperty>
+      <IntVectorProperty
+        name="MergePoints"
+        command="SetEnableMergePoints"
+        number_of_elements="1"
+        animateable="1"
+        default_values="1" >
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Use more memory to merge points on the boundaries of blocks.
+        </Documentation>
+      </IntVectorProperty>
+      <!-- End AMR Dual Clip -->
+    </SourceProxy>
 
-     <IntVectorProperty
-       name="MergePoints"
-       command="SetEnableMergePoints"
-       number_of_elements="1"
-       animateable="1"
-       default_values="1" >
-       <BooleanDomain name="bool"/>
-       <Documentation>
-         Use more memory to merge points on the boundaries of blocks.
-       </Documentation>
-     </IntVectorProperty>
+    <!-- ==================================================================== -->
+    <SourceProxy name="AMRDualContour" class="vtkAMRDualContour"
+       label="AMR Contour">
+      <Documentation
+        short_help="Iso surface cell array.">
+      </Documentation>
+      <InputProperty
+         name="Input"
+         command="SetInputConnection">
+        <ProxyGroupDomain name="groups">
+          <Group name="sources"/>
+          <Group name="filters"/>
+        </ProxyGroupDomain>
+        <DataTypeDomain name="input_type">
+          <DataType value="vtkCompositeDataSet"/>
+        </DataTypeDomain>
+        <InputArrayDomain name="input_array" attribute_type="cell"
+                          number_of_components="1"/>
+      </InputProperty>
+
+      <StringVectorProperty
+        name="SelectInputScalars"
+        command="SetInputArrayToProcess"
+        number_of_elements="5"
+        element_types="0 0 0 0 2"
+        animateable="0"
+        label="Contour By">
+        <ArrayListDomain name="array_list" attribute_type="Scalars">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+          </RequiredProperties>
+        </ArrayListDomain>
+        <Documentation>
+          This property specifies the name of the cell scalar array from which the contour filter will compute isolines and/or isosurfaces.
+        </Documentation>
+      </StringVectorProperty>
+
+      <DoubleVectorProperty
+        name="ContourValue"
+        command="SetIsoValue"
+        label="Isosurface"
+        number_of_elements="1"
+        default_values="1" >
+        animateable="1">
+        <ArrayRangeDomain name="scalar_range">
+          <RequiredProperties>
+            <Property name="Input" function="Input"/>
+            <Property name="SelectInputScalars" function="ArraySelection"/>
+          </RequiredProperties>
+        </ArrayRangeDomain>
+        <Documentation>
+          This property specifies the values at which to compute the isosurface.
+        </Documentation>
+      </DoubleVectorProperty>
+
+      <IntVectorProperty
+        name="Capping"
+        command="SetEnableCapping"
+        number_of_elements="1"
+        animateable="1"
+        default_values="1" >
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          If this property is on, the the boundary of the data set is capped.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+        name="DegenerateCells"
+        command="SetEnableDegenerateCells"
+        number_of_elements="1"
+        animateable="1"
+        default_values="1" >
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          If this property is on, a transition mesh between levels is created.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+        name="MultiprocessCommunication"
+        command="SetEnableMultiProcessCommunication"
+        number_of_elements="1"
+        animateable="1"
+        default_values="1" >
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          If this property is off, each process executes independantly.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+        name="SkipGhostCopy"
+        command="SetSkipGhostCopy"
+        number_of_elements="1"
+        animateable="1"
+        default_values="1" >
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          A simple test to see if ghost values are already set properly.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+        name="Triangulate"
+        command="SetTriangulateCap"
+        number_of_elements="1"
+        animateable="1"
+        default_values="1" >
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Use triangles instead of quads on capping surfaces.
+        </Documentation>
+      </IntVectorProperty>
+
+      <IntVectorProperty
+        name="MergePoints"
+        command="SetEnableMergePoints"
+        number_of_elements="1"
+        animateable="1"
+        default_values="1" >
+        <BooleanDomain name="bool"/>
+        <Documentation>
+          Use more memory to merge points on the boundaries of blocks.
+        </Documentation>
+      </IntVectorProperty>
 
 
-     <!-- End AMR Dual Contour -->
-   </SourceProxy>
+      <!-- End AMR Dual Contour -->
+    </SourceProxy>
 
-  <!-- ==================================================================== -->
+    <!-- ==================================================================== -->
    <SourceProxy name="CTHSurface" class="vtkCTHSimpleSurface"
       label="CTH Surface">
      <Documentation
@@ -5307,8 +5525,7 @@ The Stream Tracer filter generates streamlines in a vector field from a collecti
     <InputProperty
        name="Input"
        command="AddInputConnection"
-       clean_command="RemoveAllInputs"
-       multiple_input="1">
+       clean_command="RemoveAllInputs">
           <ProxyGroupDomain name="groups">
             <Group name="sources"/>
             <Group name="filters"/>
@@ -5525,8 +5742,7 @@ The Stream Tracer filter generates streamlines in a vector field from a collecti
     <InputProperty
        name="Input"
        command="AddInputConnection"
-       clean_command="RemoveAllInputs"
-       multiple_input="1">
+       clean_command="RemoveAllInputs">
           <ProxyGroupDomain name="groups">
             <Group name="sources"/>
             <Group name="filters"/>
@@ -8154,6 +8370,7 @@ This property controls how the filter works to generate tensor cell data. You ca
        </ProxyGroupDomain>
        <DataTypeDomain name="input_type">
          <DataType value="vtkDataSet"/>
+         <DataType value="vtkTable"/>
        </DataTypeDomain>
        <Documentation>
          This property specifies the input from which the selection is extracted.

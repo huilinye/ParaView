@@ -426,7 +426,7 @@ void vtkXRenderWindowInteractor::Initialize()
     {
     vtkTDxUnixDevice *d=this->Internal->GetDevice();
     d->SetDisplayId(this->DisplayId);
-    d->SetWindowId(this->WindowId);
+    d->SetWindowId(static_cast<vtkTDxUnixDeviceWindow>(this->WindowId));
     d->SetInteractor(this);
     d->Initialize();
     if(!d->GetInitialized())
@@ -908,7 +908,7 @@ void vtkXRenderWindowInteractorCallback(Widget vtkNotUsed(w),
       //  << endl;
       if( static_cast<Atom>(event->xclient.data.l[0]) == me->KillAtom )
         {
-        me->InvokeEvent(vtkCommand::ExitEvent, NULL);
+        me->ExitCallback();
         }
 #ifdef VTK_USE_TDX
       else

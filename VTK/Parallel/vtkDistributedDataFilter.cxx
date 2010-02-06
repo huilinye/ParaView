@@ -510,8 +510,8 @@ int vtkDistributedDataFilter::RequestData(
         continue;
         }
 
-      ds = vtkDataSet::SafeDownCast(
-        vtkDataObjectTypes::NewDataObject(leafTypes[cc]));
+      ds.TakeReference(vtkDataSet::SafeDownCast(
+        vtkDataObjectTypes::NewDataObject(leafTypes[cc])));
       }
     vtkSmartPointer<vtkUnstructuredGrid> ug =
       vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -4708,8 +4708,6 @@ int vtkDistributedDataFilter::RequestDataObject(vtkInformation*,
         }
       newOutput->SetPipelineInformation(outInfo);
       newOutput->Delete();
-      this->GetOutputPortInformation(0)->Set(
-        vtkDataObject::DATA_EXTENT_TYPE(), newOutput->GetExtentType());
       }
     return 1;
     }

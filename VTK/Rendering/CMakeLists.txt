@@ -43,12 +43,14 @@ SET( Kit_SRCS
   vtkChooserPainter.cxx
   vtkClipPlanesPainter.cxx
   vtkCoincidentTopologyResolutionPainter.cxx
+  vtkColorMaterialHelper.cxx
   vtkCompositePainter.cxx
   vtkCompositePolyDataMapper2.cxx
   vtkCompositePolyDataMapper.cxx
   vtkCullerCollection.cxx
   vtkCuller.cxx
   vtkDataSetMapper.cxx
+  vtkDataTransferHelper.cxx
   vtkDefaultPainter.cxx
   vtkDisplayListPainter.cxx
   vtkDistanceToCamera.cxx
@@ -104,8 +106,10 @@ SET( Kit_SRCS
   vtkLightActor.cxx
   vtkLightCollection.cxx
   vtkLight.cxx
+  vtkLightingHelper.cxx
   vtkLightingPainter.cxx
   vtkLightKit.cxx
+  vtkLineIntegralConvolution2D.cxx
   vtkLinesPainter.cxx
   vtkLODActor.cxx
   vtkLODProp3D.cxx
@@ -156,11 +160,14 @@ SET( Kit_SRCS
   vtkShaderDeviceAdapter.cxx
   vtkShaderProgram.cxx
   vtkStandardPolyDataPainter.cxx
-  vtkSurfacePicker.cxx
+  vtkSurfaceLICDefaultPainter.cxx
+  vtkSurfaceLICPainter.cxx
   vtkTDxInteractorStyle.cxx
   vtkTDxInteractorStyleCamera.cxx
   vtkTDxInteractorStyleSettings.cxx
   vtkTesting.cxx
+  vtkTestingInteractor.cxx
+  vtkTestingObjectFactory.cxx
   # vtkTextActor2D.cxx
   vtkTextActor3D.cxx
   vtkTextActor.cxx
@@ -294,12 +301,15 @@ SET_SOURCE_FILES_PROPERTIES(
   )
 
 SET_SOURCE_FILES_PROPERTIES(
+  vtkLightingHelper
   vtkRenderState
   vtkOpenGLState
   vtkShader2
   vtkShader2Collection
   vtkShaderProgram2
   vtkTextureUnitManager
+  vtkTestingInteractor
+  vtkTestingObjectFactory
   WRAP_EXCLUDE
   )
 
@@ -338,10 +348,28 @@ IF(VTK_USE_X)
   OPTION(VTK_USE_TDX "Use 3Dconnexion device" OFF)
   MARK_AS_ADVANCED(VTK_USE_TDX)
   IF(VTK_USE_TDX)
+   
    SET(VTK_TDX_INCLUDE_PATH CACHE PATH "Directory path to xdrvlib.h for 3DConnexion device")
    SET(VTK_TDX_OBJECT_PATH CACHE FILEPATH "File path to xdrvlib.a for 3DConnexion device")
    SET(Kit_SRCS ${Kit_SRCS} vtkTDxDevice.cxx vtkTDxUnixDevice.cxx)
    INCLUDE_DIRECTORIES(${VTK_TDX_INCLUDE_PATH})
+   SET_SOURCE_FILES_PROPERTIES(vtkTDxDevice.cxx ABSTRACT)
+   LIST(APPEND KIT_INTERFACE_LIBRARIES ${VTK_TDX_OBJECT_PATH})
+  ENDIF()
+ENDIF()
+# -----------------------------------------------------------------------------
+# 3DConnexion device (SpaceNavigator, etc... ) on Mac (not X11).
+IF(VTK_USE_CARBON OR VTK_USE_COCOA)
+  OPTION(VTK_USE_TDX "Use 3Dconnexion device" OFF)
+  MARK_AS_ADVANCED(VTK_USE_TDX)
+  IF(VTK_USE_TDX)
+# framework is in /Library/Frameworks/3DconnexionClient.framework
+   find_package(3DconnexionClient)
+   if(3DconnexionClient_FOUND)
+     set(KIT_LIBS ${KIT_LIBS} ${3DconnexionClient_LIBRARY})
+     include_directories(${3DconnexionClient_INCLUDE_DIR})
+   endif()
+   SET(Kit_SRCS ${Kit_SRCS} vtkTDxDevice.cxx vtkTDxMacDevice.cxx)
    SET_SOURCE_FILES_PROPERTIES(vtkTDxDevice.cxx ABSTRACT)
    LIST(APPEND KIT_INTERFACE_LIBRARIES ${VTK_TDX_OBJECT_PATH})
   ENDIF()
@@ -386,9 +414,14 @@ ENDIF(VTK_USE_QT)
 
 # The set of source files to be encoded.
 SET(glsl_files
+  vtkColorMaterialHelper_vs
   vtkDepthPeeling_fs
   vtkGaussianBlurPassShader_fs
   vtkLighting_s # s not vs or fs because it can be used in both.
+  vtkLightingHelper_s # s not vs or fs because it can be used in both.
+  vtkLineIntegralConvolution2D_fs
+  vtkLineIntegralConvolution2D_fs1
+  vtkLineIntegralConvolution2D_fs2
   vtkOpenGLRenderer_PeelingFS
   vtkOpenGLPropertyDefaultPropFunc_fs
   vtkOpenGLPropertyDefaultPropFunc_vs
@@ -398,6 +431,9 @@ SET(glsl_files
   vtkSobelGradientMagnitudePassShader2_fs
   vtkShadowMapPassShader_fs
   vtkShadowMapPassShader_vs
+  vtkSurfaceLICPainter_fs1
+  vtkSurfaceLICPainter_fs2
+  vtkSurfaceLICPainter_vs1
   )
 
 # Create custom commands to encode each assembly file into a C string
@@ -670,6 +706,11 @@ IF (VTK_WRAP_TCL AND VTK_USE_TK)
   SET(KitTCL_SRCS
     vtkTkRenderWidget.cxx
     vtkTkImageViewerWidget.cxx)
+  IF (VTK_USE_COCOA)
+    SET(KitTCL_SRCS ${KitTCL_SRCS}
+      vtkCocoaTkUtilities.mm)
+    SET_SOURCE_FILES_PROPERTIES(vtkCocoaTkUtilities WRAP_EXCLUDE)
+  ENDIF(VTK_USE_COCOA)
 
   # Use special interactor for X and Tk.
   IF(VTK_USE_X)
@@ -712,6 +753,11 @@ IF (VTK_WRAP_PYTHON AND VTK_USE_TK AND TK_FOUND)
     vtkTkRenderWidgetPython.cxx
     vtkTkImageViewerWidgetPython.cxx
     )
+  IF (VTK_USE_COCOA)
+    SET(RenderingPythonTkWidgets_SRCS ${RenderingPythonTkWidgets_SRCS}
+        vtkCocoaTkUtilities.mm)
+  ENDIF (VTK_USE_COCOA)
+
   ADD_LIBRARY(vtkRenderingPythonTkWidgets SHARED
               ${RenderingPythonTkWidgets_SRCS})
   SET(VTK_PYTHONTK_LIBRARIES ${VTK_TK_LIBRARIES})

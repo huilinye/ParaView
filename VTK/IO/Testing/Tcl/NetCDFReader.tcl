@@ -3,15 +3,13 @@
 package require vtk
 
 # Open the file.
-vtkNetCDFCOARDSReader reader
+vtkNetCDFCFReader reader
 reader SetFileName "$VTK_DATA_ROOT/Data/tos_O1_2001-2002.nc"
 
 # Set the arrays we want to load.
 reader UpdateMetaData
-reader SetVariableArrayStatus "lon_bnds" 0
-reader SetVariableArrayStatus "lat_bnds" 0
-reader SetVariableArrayStatus "time_bnds" 0
 reader SetVariableArrayStatus "tos" 1
+reader SetSphericalCoordinates 0
 
 vtkAssignAttribute aa
 aa SetInputConnection [reader GetOutputPort]

@@ -60,8 +60,8 @@ SET(Kit_SRCS
   vtkPVGenericAttributeInformation.cxx
   vtkPVInformation.cxx
   vtkPVOpenGLExtensionsInformation.cxx
-  vtkPVPluginInformation.cxx
   vtkPVPlugin.cxx
+  vtkPVPluginInformation.cxx
   vtkPVPluginLoader.cxx
   vtkPVProgressHandler.cxx
   vtkPVPythonModule.cxx
@@ -69,6 +69,7 @@ SET(Kit_SRCS
   vtkPVServerInformation.cxx
   vtkPVServerOptions.cxx
   vtkPVSILInformation.cxx
+  vtkPVTemporalDataInformation.cxx
   vtkPVTestUtilities.cxx
   vtkPVTimerInformation.cxx
   vtkRemoteConnection.cxx
@@ -81,6 +82,8 @@ SET(Kit_SRCS
   vtkUndoElement.cxx
   vtkUndoSet.cxx
   vtkUndoStack.cxx
+  vtkPVServerManagerPluginInterface.cxx
+  vtkPVPythonPluginInterface.cxx
 
 # these files seem to be socket related, so for Cray Xt3/Catamount they probably have to 
 # be excluded, e.g. via IF(HAVE_SOCKETS) coming from VTK/Parallel/VTKParallelCMakeTests.cmake, Alex
@@ -119,6 +122,8 @@ SET_SOURCE_FILES_PROPERTIES(
   vtkPVPlugin.cxx
   vtkRemoteConnection
   vtkUndoElement
+  vtkPVServerManagerPluginInterface
+  vtkPVPythonPluginInterface
   ABSTRACT
   )
 SET_SOURCE_FILES_PROPERTIES(
@@ -130,6 +135,8 @@ SET_SOURCE_FILES_PROPERTIES(
   vtkPVServerOptions.cxx
   vtkPVServerSocket.cxx
   vtkPVTestUtilities.cxx
+  vtkPVServerManagerPluginInterface.cxx
+  vtkPVPythonPluginInterface.cxx
   # vtkStringList.cxx
   WRAP_EXCLUDE
   )

@@ -22,7 +22,7 @@
 #include "vtkPVOptions.h"
 #include "vtkPVPlugin.h"
 #include "vtkPVPluginInformation.h"
-#include "vtkPVPythonPluginInterace.h"
+#include "vtkPVPythonPluginInterface.h"
 #include "vtkPVServerManagerPluginInterface.h"
 #include "vtkSmartPointer.h"
 #include "vtkStringArray.h"
@@ -152,9 +152,9 @@ void vtkPVPluginLoader::SetFileName(const char* file)
       "from a older version of ParaView when this function was not required.");
     this->PluginInfo->SetError(
       "Not a ParaView Plugin since could not locate the plugin-verification function");
-    vtkErrorMacro(
-      "Not a ParaView Plugin since could not locate the plugin-verification "
-      "function");
+    //vtkErrorMacro(
+    //  "Not a ParaView Plugin since could not locate the plugin-verification "
+    //  "function");
     vtkDynamicLoader::CloseLibrary(lib);
     return;
     }
@@ -326,8 +326,8 @@ void vtkPVPluginLoader::Load(vtkPVPlugin* plugin)
     }
 
   // Now, if this is a python-module plugin, get the python source list.
-  vtkPVPythonPluginInterace *pyplugin =
-    dynamic_cast<vtkPVPythonPluginInterace*>(plugin);
+  vtkPVPythonPluginInterface *pyplugin =
+    dynamic_cast<vtkPVPythonPluginInterface*>(plugin);
   if (pyplugin)
     {
     vtkstd::vector<vtkstd::string> names;

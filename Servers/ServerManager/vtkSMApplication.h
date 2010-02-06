@@ -26,6 +26,7 @@
 struct vtkSMApplicationInternals;
 //ETX
 class vtkSMPluginManager;
+class vtkQtInitialization;
 
 class VTK_EXPORT vtkSMApplication : public vtkSMObject
 {
@@ -74,11 +75,19 @@ public:
   // Plugin manager managing all server manager plugins.
   vtkSMPluginManager* GetPluginManager();
 
+  // Description:
+  // Certain server manager components need Qt. Those need to verify that the
+  // QApplication has been initialized. They can use this method to initialize
+  // the QApplication if it hasn't been initialized. This has any effect only
+  // when compiled with VTK_USE_QVTK.
+  void EnsureQApplicationIsInitialized();
+
 protected:
   vtkSMApplication();
   ~vtkSMApplication();
 
   vtkSMApplicationInternals* Internals;
+  vtkQtInitialization* QtInitializer;
 private:
   vtkSMApplication(const vtkSMApplication&); // Not implemented
   void operator=(const vtkSMApplication&); // Not implemented

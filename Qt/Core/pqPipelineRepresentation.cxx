@@ -45,9 +45,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vtkPVArrayInformation.h"
 #include "vtkPVDataSetAttributesInformation.h"
 #include "vtkPVGeometryInformation.h"
+#include "vtkPVTemporalDataInformation.h"
+#include "vtkScalarsToColors.h"
 #include "vtkSmartPointer.h" 
 #include "vtkSMDoubleVectorProperty.h"
 #include "vtkSMGlobalPropertiesManager.h"
+#include "vtkSMPropertyHelper.h"
 #include "vtkSMProxyManager.h"
 #include "vtkSMProxyProperty.h"
 #include "vtkSMPVRepresentationProxy.h"
@@ -176,6 +179,7 @@ pqPipelineRepresentation::pqPipelineRepresentation(
   this->Internal->VTKConnect->Connect(
     display, vtkCommand::UpdateDataEvent,
     this, SLOT(onDataUpdated()));
+  this->UpdateLUTRangesOnDataUpdate = true;
 }
 
 //-----------------------------------------------------------------------------
@@ -238,6 +242,30 @@ void pqPipelineRepresentation::createHelperProxies()
 }
 
 //-----------------------------------------------------------------------------
+void pqPipelineRepresentation::onInputChanged()
+{
+  if (this->getInput())
+    {
+    QObject::disconnect(this->getInput(),
+      SIGNAL(modifiedStateChanged(pqServerManagerModelItem*)),
+      this, SLOT(onInputAccepted()));
+    }
+
+  this->Superclass::onInputChanged();
+
+  if (this->getInput())
+    {
+    /// We need to try to update the LUT ranges only when the user manually
+    /// changed the input source object (not necessarily ever pipeline update
+    /// which can happen when time changes -- for example). So we listen to this
+    /// signal. BUG #10062.
+    QObject::connect(this->getInput(),
+      SIGNAL(modifiedStateChanged(pqServerManagerModelItem*)),
+      this, SLOT(onInputAccepted()));
+    }
+}
+
+//-----------------------------------------------------------------------------
 void pqPipelineRepresentation::setDefaultPropertyValues()
 {
   // We deliberately don;t call superclass. For somereason,
@@ -265,6 +293,7 @@ void pqPipelineRepresentation::setDefaultPropertyValues()
   pqSMAdaptor::setEnumerationProperty(repr->GetProperty("SelectionRepresentation"),
     "Wireframe");
   pqSMAdaptor::setElementProperty(repr->GetProperty("SelectionLineWidth"), 2);
+  pqSMAdaptor::setElementProperty(repr->GetProperty("SelectionPointSize"), 5);
 
   // Set up some global property links by default.
   vtkSMGlobalPropertiesManager* globalPropertiesManager =
@@ -281,6 +310,8 @@ void pqPipelineRepresentation::setDefaultPropertyValues()
     "EdgeColor", repr, "EdgeColor");
   globalPropertiesManager->SetGlobalPropertyLink(
     "SurfaceColor", repr, "BackfaceDiffuseColor");
+  globalPropertiesManager->SetGlobalPropertyLink(
+    "ForegroundColor", repr, "CubeAxesColor");
 
   // if the source created a new point scalar, use it
   // else if the source created a new cell scalar, use it
@@ -722,16 +753,74 @@ void pqPipelineRepresentation::resetLookupTableScalarRange()
 }
 
 //-----------------------------------------------------------------------------
+void pqPipelineRepresentation::resetLookupTableScalarRangeOverTime()
+{
+  vtkSMPropRepresentationProxy* repr = this->getRepresentationProxy();
+  pqScalarsToColors* lut = this->getLookupTable();
+  QString colorField = this->getColorField(true);
+
+  if (lut && colorField != "" && 
+    colorField != pqPipelineRepresentation::solidColor())
+    {
+    int attribute_type = vtkSMPropertyHelper(repr,
+      "ColorAttributeType").GetAsInt();
+    vtkPVTemporalDataInformation* dataInfo = 
+      this->getInputTemporalDataInformation();
+    vtkPVArrayInformation* arrayInfo = dataInfo->GetAttributeInformation(
+      attribute_type)->GetArrayInformation(colorField.toAscii().data());
+    if (arrayInfo)
+      {
+      int component = vtkSMPropertyHelper(lut->getProxy(),
+        "VectorComponent").GetAsInt();
+        if (vtkSMPropertyHelper(
+            lut->getProxy(), "VectorMode").GetAsInt() ==
+          vtkScalarsToColors::MAGNITUDE)
+          {
+          component = -1;
+          }
+      double range[2];
+      arrayInfo->GetComponentRange(component, range);
+      lut->setScalarRange(range[0], range[1]);
+
+      // scalar opacity is treated as slave to the lookup table.
+      pqScalarOpacityFunction* opacity = this->getScalarOpacityFunction();
+      if (opacity)
+        {
+        opacity->setScalarRange(range[0], range[1]);
+        }
+      }
+    }
+}
+
+//-----------------------------------------------------------------------------
+void pqPipelineRepresentation::onInputAccepted()
+{
+  // BUG #10062
+  // This slot gets called when the input to the representation is "accepted".
+  // We mark this representation's LUT ranges dirty so that when the pipeline
+  // finally updates, we can reset the LUT ranges.
+  if (this->getInput()->modifiedState() == pqProxy::MODIFIED)
+    {
+    this->UpdateLUTRangesOnDataUpdate = true;
+    }
+}
+
+//-----------------------------------------------------------------------------
 void pqPipelineRepresentation::onDataUpdated()
 {
-  // Since this part of the code happens every time the pipeline is updated, we
-  // don't need to record it on the undo stack. It will happen automatically
-  // each time.
-  BEGIN_UNDO_EXCLUDE();
-
-  this->updateLookupTableScalarRange();
-
-  END_UNDO_EXCLUDE();
+  if (this->UpdateLUTRangesOnDataUpdate ||
+    pqScalarsToColors::colorRangeScalingMode() ==
+    pqScalarsToColors::GROW_ON_UPDATED)
+    {
+    // BUG #10062
+    // Since this part of the code happens every time the pipeline is updated, we
+    // don't need to record it on the undo stack. It will happen automatically
+    // each time.
+    BEGIN_UNDO_EXCLUDE();
+    this->UpdateLUTRangesOnDataUpdate = false;
+    this->updateLookupTableScalarRange();
+    END_UNDO_EXCLUDE();
+    }
 }
 
 //-----------------------------------------------------------------------------

@@ -44,6 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "pqPluginDockWidgetsBehavior.h"
 #include "pqPluginManager.h"
 #include "pqPVNewSourceBehavior.h"
+#include "pqQtMessageHandlerBehavior.h"
 #include "pqSpreadSheetVisibilityBehavior.h"
 #include "pqStandardViewModules.h"
 #include "pqUndoRedoBehavior.h"
@@ -63,7 +64,11 @@ pqParaViewBehaviors::pqParaViewBehaviors(
   // * adds support for standard paraview views.
   pgm->addInterface(new pqStandardViewModules(pgm));
 
+  // Load plugins distributed with application.
+  pqApplicationCore::instance()->loadDistributedPlugins();
+
   // Define application behaviors.
+  new pqQtMessageHandlerBehavior(this);
   new pqDataTimeStepBehavior(this);
   new pqViewFrameActionsBehavior(this);
   new pqSpreadSheetVisibilityBehavior(this);
@@ -72,12 +77,12 @@ pqParaViewBehaviors::pqParaViewBehaviors(
   new pqPVNewSourceBehavior(this);
   new pqDeleteBehavior(this);
   new pqUndoRedoBehavior(this);
-  new pqPersistentMainWindowStateBehavior(mainWindow);
   new pqCrashRecoveryBehavior(this);
   new pqAutoLoadPluginXMLBehavior(this);
   new pqPluginDockWidgetsBehavior(mainWindow);
   new pqPluginActionGroupBehavior(mainWindow);
   new pqCommandLineOptionsBehavior(this);
+  new pqPersistentMainWindowStateBehavior(mainWindow);
 
   // Setup quick-launch shortcuts.
   QShortcut *ctrlSpace = new QShortcut(Qt::CTRL + Qt::Key_Space,

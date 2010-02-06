@@ -15,7 +15,7 @@ ELSE(VTK_USE_RENDERING)
   SET(KIT_PYTHON_LIBS vtkGraphicsPythonD)
   SET(KIT_JAVA_LIBS vtkGraphicsJava)
   SET(KIT_INTERFACE_LIBRARIES vtkGraphics)
-  SET(KIT_LIBS ${VTK_LIBXML2_LIBRARIES} vtkalglib)
+  SET(KIT_LIBS ${VTK_LIBXML2_LIBRARIES} vtkalglib vtkIO vtkImaging)
 ENDIF(VTK_USE_RENDERING)
 
 SET( Kit_SRCS
@@ -49,7 +49,6 @@ vtkEdgeLayout.cxx
 vtkEdgeLayoutStrategy.cxx
 vtkExpandSelectedGraph.cxx
 vtkExtractSelectedGraph.cxx
-vtkExtractSelectedRows.cxx
 vtkFast2DLayoutStrategy.cxx
 vtkFixedWidthTextReader.cxx
 vtkForceDirectedLayoutStrategy.cxx
@@ -86,8 +85,10 @@ vtkRemoveIsolatedVertices.cxx
 vtkRemoveHiddenData.cxx
 vtkSCurveSpline.cxx
 vtkSimple2DLayoutStrategy.cxx
+vtkSimple3DCirclesStrategy.cxx
 vtkSliceAndDiceLayoutStrategy.cxx
 vtkSplineGraphEdges.cxx
+vtkSplitColumnComponents.cxx
 vtkSquarifyLayoutStrategy.cxx
 vtkSpanTreeLayoutStrategy.cxx
 vtkStackedTreeLayoutStrategy.cxx
@@ -186,6 +187,7 @@ IF(VTK_USE_N_WAY_ARRAYS)
     vtkNormalizeMatrixVectors.cxx
     vtkPairwiseExtractHistogram2D.cxx
     vtkSparseArrayToTable.cxx
+    vtkTableToArray.cxx
     vtkTableToSparseArray.cxx
     vtkTransposeMatrix.cxx
     )

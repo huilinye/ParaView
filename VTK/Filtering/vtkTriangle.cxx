@@ -49,6 +49,21 @@ vtkTriangle::~vtkTriangle()
   this->Line->Delete();
 }
 
+//----------------------------------------------------------------------------
+// This function simply calls the static function:
+// vtkTriangle::TriangleArea(double p1[3], double p2[3], double p3[3])
+// with the appropriate parameters from the instantiated vtkTriangle.
+double vtkTriangle::ComputeArea()
+{
+  double p0[3];
+  double p1[3];
+  double p2[3];
+  this->GetPoints()->GetPoint(0, p0);
+  this->GetPoints()->GetPoint(1, p1);
+  this->GetPoints()->GetPoint(2, p2);
+  return vtkTriangle::TriangleArea(p0, p1, p2);
+}
+
 
 //----------------------------------------------------------------------------
 // Create a new cell and copy this triangle's information into the cell.

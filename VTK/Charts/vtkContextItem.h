@@ -23,8 +23,10 @@
 #define __vtkContextItem_h
 
 #include "vtkObject.h"
+#include "vtkWeakPointer.h" // Needed for weak pointer references to the scene
 
 class vtkContext2D;
+class vtkContextScene;
 class vtkTransform2D;
 struct vtkContextMouseEvent;
 
@@ -62,6 +64,10 @@ public:
   // Description:
   // Mouse button release event.
   virtual bool MouseButtonReleaseEvent(const vtkContextMouseEvent &mouse);
+
+  // Description:
+  // Mouse wheel event, positive delta indicates forward movement of the wheel.
+  virtual bool MouseWheelEvent(const vtkContextMouseEvent &mouse, int delta);
 //ETX
 
   // Description:
@@ -84,12 +90,21 @@ public:
   // Translate the item by the given dx, dy.
   void Translate(float dx, float dy);
 
+  // Description:
+  // Set the vtkContextScene for the item, always set for an item in a scene.
+  virtual void SetScene(vtkContextScene *scene);
+
+  // Description:
+  // Get the vtkContextScene for the item, always set for an item in a scene.
+  vtkContextScene* GetScene();
+
 //BTX
 protected:
   vtkContextItem();
   ~vtkContextItem();
 
   vtkTransform2D *Transform;
+  vtkWeakPointer<vtkContextScene> Scene;
 
   double Opacity;
 

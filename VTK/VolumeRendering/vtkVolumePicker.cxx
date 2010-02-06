@@ -47,11 +47,11 @@ void vtkVolumePicker::PrintSelf(ostream& os, vtkIndent indent)
 }
 
 //----------------------------------------------------------------------------
-void vtkVolumePicker::Initialize()
+void vtkVolumePicker::ResetPickInfo()
 {
+  this->Superclass::ResetPickInfo();
+  
   this->CroppingPlaneId = -1;
-
-  this->Superclass::Initialize();
 }
 
 //----------------------------------------------------------------------------
@@ -61,7 +61,7 @@ void vtkVolumePicker::Initialize()
 double vtkVolumePicker::IntersectVolumeWithLine(const double p1[3],
                                                 const double p2[3],
                                                 double t1, double t2,
-                                                vtkVolume *volume, 
+                                                vtkProp3D *prop, 
                                                 vtkAbstractVolumeMapper *mapper)
 {
   double tMin = VTK_DOUBLE_MAX;
@@ -146,35 +146,26 @@ double vtkVolumePicker::IntersectVolumeWithLine(const double p1[3],
     // Set data values at the intersected cropping or clipping plane
     if ((tMin = t1) < this->GlobalTMin)
       {
+      this->ResetPickInfo();
+      this->DataSet = data;
+      this->Mapper = vmapper;
+
+      double x[3];
       for (int j = 0; j < 3; j++)
         {
-        double x = x1[j]*(1.0 - tMin) + x2[j]*tMin;
-        if (j == planeId/2)
+        x[j] = x1[j]*(1.0 - tMin) + x2[j]*tMin;
+        if (planeId >= 0 && j == planeId/2)
           {
-          x = bounds[planeId];
+          x[j] = bounds[planeId];
           }
-        else if (j == extentPlaneId/2)
+        else if (planeId < 0 && extentPlaneId >= 0 && j == extentPlaneId/2)
           {
-          x = extent[extentPlaneId];
+          x[j] = extent[extentPlaneId];
           }
-        this->MapperPosition[j] = x*spacing[j] + origin[j];
-        int xi = int(floor(x));
-        this->CellIJK[j] = xi;
-        this->PCoords[j] = x - xi;
-        if (xi == extent[2*j+1])
-          { // Avoid out-of-bounds cell
-          this->CellIJK[j]--;
-          this->PCoords[j] = 1.0;
-          }
-        this->PointIJK[j] = this->CellIJK[j];
-        if (this->PCoords[j] >= 0.5)
-          {
-          this->PointIJK[j]++;
-          }
+        this->MapperPosition[j] = x[j]*spacing[j] + origin[j];
         }
-      this->PointId = data->ComputePointId(this->PointIJK);
-      this->CellId = data->ComputeCellId(this->CellIJK);
-      this->SubId = 0;
+
+      this->SetImageDataPickInfo(x, extent);
       }
     }
   else
@@ -186,7 +177,7 @@ double vtkVolumePicker::IntersectVolumeWithLine(const double p1[3],
       t2 = t2List[segment];
 
       if ((tMin = this->Superclass::IntersectVolumeWithLine(
-           p1, p2, t1, t2, volume, mapper)) < VTK_DOUBLE_MAX)
+           p1, p2, t1, t2, prop, mapper)) < VTK_DOUBLE_MAX)
         {
         s1 = s1List[segment];
         // Keep the first planeId that was set at the first intersection

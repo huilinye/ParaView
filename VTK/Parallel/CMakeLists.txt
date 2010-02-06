@@ -10,10 +10,19 @@ IF(VTK_USE_RENDERING)
   SET(KIT_JAVA_LIBS vtkRenderingJava ${KIT_JAVA_LIBS})
   SET(KIT_INTERFACE_LIBRARIES vtkRendering ${KIT_INTERFACE_LIBRARIES})
   SET(KIT_LIBS ${KIT_LIBS} ${OPENGL_gl_LIBRARY})
+ELSE(VTK_USE_RENDERING)
+  SET(KIT_PYTHON_LIBS ${KIT_PYTHON_LIBS} vtkGraphicsPythonD)
+  SET(KIT_LIBS ${KIT_LIBS} vtkGraphics vtkImaging)
 ENDIF(VTK_USE_RENDERING)
 IF(VTK_HAS_EXODUS)
   SET(KIT_LIBS ${KIT_LIBS} vtkexoIIc)
 ENDIF(VTK_HAS_EXODUS)
+
+IF(VTK_USE_OPENFOAM)
+  set(_VTK_OPENFOAM_SOURCES vtkPOpenFOAMReader.cxx)
+ELSE(VTK_USE_OPENFOAM)
+  set(_VTK_OPENFOAM_SOURCES)
+ENDIF(VTK_USE_OPENFOAM)
 
 SET ( Kit_SRCS
 vtkBranchExtentTranslator.cxx
@@ -50,6 +59,7 @@ vtkPieceScalars.cxx
 vtkPKdTree.cxx
 vtkPLinearExtrusionFilter.cxx
 vtkPOPReader.cxx
+${_VTK_OPENFOAM_SOURCES}
 vtkPOutlineCornerFilter.cxx
 vtkPOutlineFilter.cxx
 vtkPPolyDataNormals.cxx

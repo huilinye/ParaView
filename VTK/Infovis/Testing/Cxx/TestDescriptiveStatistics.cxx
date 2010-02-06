@@ -12,8 +12,10 @@
 
 #include "vtkDataObjectCollection.h"
 #include "vtkDoubleArray.h"
+#include "vtkMath.h"
 #include "vtkStringArray.h"
 #include "vtkTable.h"
+#include "vtkTimerLog.h"
 #include "vtkDescriptiveStatistics.h"
 
 //=============================================================================
@@ -143,6 +145,7 @@ int TestDescriptiveStatistics( int, char *[] )
   ds1->SetInput( vtkStatisticsAlgorithm::INPUT_DATA, datasetTable1 );
   vtkTable* outputData1 = ds1->GetOutput( vtkStatisticsAlgorithm::OUTPUT_DATA );
   vtkTable* outputMeta1 = ds1->GetOutput( vtkStatisticsAlgorithm::OUTPUT_MODEL );
+  vtkTable* outputTest1 = ds1->GetOutput( vtkStatisticsAlgorithm::OUTPUT_TEST );
 
   datasetTable1->Delete();
 
@@ -157,10 +160,11 @@ int TestDescriptiveStatistics( int, char *[] )
   ds1->SetNominalParameter( "Mean");
   ds1->SetDeviationParameter( "Standard Deviation");
 
-  // Run with Learn and Assess options
+  // Test Learn, Derive, Test, and Assess options
   ds1->SetLearnOption( true );
   ds1->SetDeriveOption( true );
   ds1->SetAssessOption( true );
+  ds1->SetTestOption( true );
   ds1->SignedDeviationsOff();
   ds1->Update();
 
@@ -192,13 +196,28 @@ int TestDescriptiveStatistics( int, char *[] )
     cout << "\n";
     }
 
+  // Check some results of the Test option
+  cout << "\n## Calculated the following Jarque-Bera statistics:\n";
+  for ( vtkIdType r = 0; r < outputTest1->GetNumberOfRows(); ++ r )
+    {
+    cout << "   ";
+    for ( int i = 0; i < outputTest1->GetNumberOfColumns(); ++ i )
+      {
+      cout << outputTest1->GetColumnName( i )
+           << "="
+           << outputTest1->GetValue( r, i ).ToString()
+           << "  ";
+      }
+
+    cout << "\n";
+    }
+
+  // Search for outliers to check results of Assess option
   double maxdev = 1.5;
-  cout << "## Searching for outliers from mean with relative deviation > "
+  cout << "\n## Searching for outliers from mean with relative deviation > "
        << maxdev
        << " for metric 1:\n";
 
-  int m0outliers = 0;
-  int m1outliers = 0;
   vtkDoubleArray* vals0 = vtkDoubleArray::SafeDownCast( outputData1->GetColumnByName( "Metric 0" ) );
   vtkDoubleArray* vals1 = vtkDoubleArray::SafeDownCast( outputData1->GetColumnByName( "Metric 1" ) );
   vtkDoubleArray* devs0 = vtkDoubleArray::SafeDownCast( outputData1->GetColumnByName( "d(Metric 0)" ) );
@@ -213,6 +232,8 @@ int TestDescriptiveStatistics( int, char *[] )
     }
 
   double dev;
+  int m0outliers = 0;
+  int m1outliers = 0;
   for ( vtkIdType r = 0; r < outputData1->GetNumberOfRows(); ++ r )
     {
     dev = devs0->GetValue( r );
@@ -253,17 +274,22 @@ int TestDescriptiveStatistics( int, char *[] )
            << ")\n";
       }
     }
-  cout
-    << "  Found " << m0outliers << " outliers for Metric 0"
-    << " and " << m1outliers << " outliers for Metric 1.\n";
+
+  cout << "  Found " 
+       << m0outliers 
+       << " outliers for Metric 0"
+       << " and " 
+       << m1outliers 
+       << " outliers for Metric 1.\n";
+
   if ( m0outliers != 4 || m1outliers != 6 )
     {
     vtkGenericWarningMacro("Expected 4 outliers for Metric 0 and 6 outliers for Metric 1.");
     testStatus = 1;
     }
 
-  // Used modified output 1 as input 1 to test 0-deviation
-  cout << "## Searching for outliers from mean with relative deviation > 0 from 50 for metric 1:\n";
+  // Now, used modified output 1 as input 1 to test 0-deviation
+  cout << "\n## Searching for outliers from mean with relative deviation > 0 from 50 for metric 1:\n";
 
   vtkTable* paramsTable = vtkTable::New();
   paramsTable->ShallowCopy( outputMeta1 );
@@ -274,6 +300,7 @@ int TestDescriptiveStatistics( int, char *[] )
   ds1->SetInput( vtkStatisticsAlgorithm::INPUT_MODEL, paramsTable );
   ds1->SetLearnOption( false );
   ds1->SetDeriveOption( false ); 
+  ds1->SetTestOption( true );
   ds1->SetAssessOption( true );
   ds1->Update();
 
@@ -365,6 +392,7 @@ int TestDescriptiveStatistics( int, char *[] )
   // Update with Learn option only
   ds2->SetLearnOption( true );
   ds2->SetDeriveOption( false );
+  ds2->SetTestOption( false );
   ds2->SetAssessOption( false );
   ds2->Update();
 
@@ -397,6 +425,7 @@ int TestDescriptiveStatistics( int, char *[] )
   ds2->SetInput( vtkStatisticsAlgorithm::INPUT_MODEL, aggregated );
   ds2->SetLearnOption( false );
   ds2->SetDeriveOption( true ); 
+  ds2->SetTestOption( false );
   ds2->SetAssessOption( false );
   ds2->Update();
 
@@ -476,20 +505,21 @@ int TestDescriptiveStatistics( int, char *[] )
   double g1 = 0.;
   double g2 = -1.56163636363636;
 
-  ds = vtkDescriptiveStatistics::New();
-  ds->SetInput( vtkStatisticsAlgorithm::INPUT_DATA, simpleTable );
-  vtkTable* outputSimpleMeta = ds->GetOutput( vtkStatisticsAlgorithm::OUTPUT_MODEL );
+  vtkDescriptiveStatistics* ds3 = vtkDescriptiveStatistics::New();
+  ds3->SetInput( vtkStatisticsAlgorithm::INPUT_DATA, simpleTable );
+  vtkTable* outputSimpleMeta = ds3->GetOutput( vtkStatisticsAlgorithm::OUTPUT_MODEL );
 
   simpleTable->Delete();
 
   // Select Column of Interest
-  ds->AddColumn( "Digits" );
+  ds3->AddColumn( "Digits" );
 
-  // Test Learn and Derive only
-  ds->SetLearnOption( true );
-  ds->SetDeriveOption( true );
-  ds->SetAssessOption( false );
-  ds->Update();
+  // Test Learn and Derive options only
+  ds3->SetLearnOption( true );
+  ds3->SetDeriveOption( true );
+  ds3->SetTestOption( false );
+  ds3->SetAssessOption( false );
+  ds3->Update();
 
   cout << "\n## Calculated the following statistics for {0,...9} sequence:\n";
   
@@ -512,14 +542,12 @@ int TestDescriptiveStatistics( int, char *[] )
     vtkGenericWarningMacro("Incorrect variance");
     testStatus = 1;
     }
-  cout << "\n";
   
   if ( fabs ( outputSimpleMeta->GetValueByName( 0, "g1 Skewness" ).ToDouble() - g1 ) > 1.e-6 )
     {
     vtkGenericWarningMacro("Incorrect g1 skewness");
     testStatus = 1;
     }
-  cout << "\n";
   
   if ( fabs ( outputSimpleMeta->GetValueByName( 0, "g2 Kurtosis" ).ToDouble() - g2 ) > 1.e-6 )
     {
@@ -528,7 +556,143 @@ int TestDescriptiveStatistics( int, char *[] )
     }
   cout << "\n";
 
-  ds->Delete();
+  ds3->Delete();
+
+  // ************** Pseudo-random sample to exercise Jarque-Bera test ********* 
+  int nGaussianVals = 10000;
+
+  vtkDoubleArray* datasetArrG = vtkDoubleArray::New();
+  datasetArrG->SetNumberOfComponents( 1 );
+  datasetArrG->SetName( "Standard Normal" );
+
+  vtkDoubleArray* datasetArrU = vtkDoubleArray::New();
+  datasetArrU->SetNumberOfComponents( 1 );
+  datasetArrU->SetName( "Standard Uniform" );
+
+  vtkDoubleArray* datasetArrL = vtkDoubleArray::New();
+  datasetArrL->SetNumberOfComponents( 1 );
+  datasetArrL->SetName( "Standard Log-Normal" );
+
+  vtkDoubleArray* datasetArrE = vtkDoubleArray::New();
+  datasetArrE->SetNumberOfComponents( 1 );
+  datasetArrE->SetName( "Standard Exponential" );
+
+  // Seed random number generator
+  vtkMath::RandomSeed( static_cast<int>( vtkTimerLog::GetUniversalTime() ) );
+
+  for ( int i = 0; i < nGaussianVals; ++ i )
+    {
+    datasetArrG->InsertNextValue( vtkMath::Gaussian() );
+    datasetArrU->InsertNextValue( vtkMath::Random() );
+    datasetArrL->InsertNextValue( exp( vtkMath::Gaussian() ) );
+    datasetArrE->InsertNextValue( -log ( vtkMath::Random() ) );
+    }
+
+  vtkTable* gaussianTable = vtkTable::New();
+  gaussianTable->AddColumn( datasetArrG );
+  datasetArrG->Delete();
+  gaussianTable->AddColumn( datasetArrU );
+  datasetArrU->Delete();
+  gaussianTable->AddColumn( datasetArrL );
+  datasetArrL->Delete();
+  gaussianTable->AddColumn( datasetArrE );
+  datasetArrE->Delete();
+
+  vtkDescriptiveStatistics* ds4 = vtkDescriptiveStatistics::New();
+  ds4->SetInput( vtkStatisticsAlgorithm::INPUT_DATA, gaussianTable );
+  vtkTable* outputMeta4 = ds4->GetOutput( vtkStatisticsAlgorithm::OUTPUT_MODEL );
+  vtkTable* outputTest4 = ds4->GetOutput( vtkStatisticsAlgorithm::OUTPUT_TEST );
+
+  gaussianTable->Delete();
+
+  // Select Column of Interest
+  ds4->AddColumn( "Standard Normal" );
+  ds4->AddColumn( "Standard Uniform" );
+  ds4->AddColumn( "Standard Log-Normal" );
+  ds4->AddColumn( "Standard Exponential" );
+
+  // Test Learn, Derive, and Test options only
+  ds4->SetLearnOption( true );
+  ds4->SetDeriveOption( true );
+  ds4->SetTestOption( true );
+  ds4->SetAssessOption( false );
+  ds4->Update();
+
+  // Print some calculated statistics of the Learn and Derive options
+  cout << "\n## Some calculated descriptive statistics for pseudo-random variables (n="
+       << nGaussianVals
+       << "):\n";
+
+  int soi[] = { 0, 2, 3, 4, 9, 10, 12 };
+  int nsoi = 7;
+
+  for ( vtkIdType r = 0; r < outputMeta4->GetNumberOfRows(); ++ r )
+    {
+    cout << "   ";
+    for ( int i = 0; i < nsoi; ++ i )
+      {
+      cout << outputMeta4->GetColumnName( soi[i] )
+           << "="
+           << outputMeta4->GetValue( r, soi[i] ).ToString()
+           << "  ";
+      }
+
+    cout << "\n";
+    }
+
+  // Check some results of the Test option
+  cout << "\n## Calculated the following Jarque-Bera statistics for pseudo-random variables (n="
+       << nGaussianVals
+       << "):\n";
+  
+#ifdef VTK_USE_GNU_R
+  int nNonGaussian = 3;
+  int nRejected = 0;
+  double alpha = .01;
+#endif // VTK_USE_GNU_R
+
+  // Loop over Test table
+  for ( vtkIdType r = 0; r < outputTest4->GetNumberOfRows(); ++ r )
+    {
+    cout << "   ";
+    for ( int c = 0; c < outputTest4->GetNumberOfColumns(); ++ c )
+      {
+      cout << outputTest4->GetColumnName( c )
+           << "="
+           << outputTest4->GetValue( r, c ).ToString()
+           << "  ";
+      }
+
+#ifdef VTK_USE_GNU_R
+    // Check if null hypothesis is rejected at specified significance level
+    double p = outputTest4->GetValueByName( r, "P" ).ToDouble();
+    // Must verify that p value is valid (it is set to -1 if R has failed)
+    if ( p > -1 && p < alpha )
+      {
+      cout << "Null hypothesis (normality) rejected at "
+           << alpha
+           << " significance level";
+
+      ++ nRejected;
+      }
+#endif // VTK_USE_GNU_R
+
+    cout << "\n";
+    }
+
+#ifdef VTK_USE_GNU_R
+  if ( nRejected < nNonGaussian )
+    {
+    vtkGenericWarningMacro("Rejected only "
+                           << nRejected
+                           << " null hypotheses of normality whereas "
+                           << nNonGaussian
+                           << " variables are not Gaussian");
+    testStatus = 1;
+    }
+#endif // VTK_USE_GNU_R
+  
+  ds4->Delete();
 
   return testStatus;
 }

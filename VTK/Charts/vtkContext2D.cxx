@@ -31,7 +31,6 @@ vtkCxxRevisionMacro(vtkContext2D, "$Revision$");
 vtkCxxSetObjectMacro(vtkContext2D, Pen, vtkPen);
 vtkCxxSetObjectMacro(vtkContext2D, Brush, vtkBrush);
 vtkCxxSetObjectMacro(vtkContext2D, TextProp, vtkTextProperty);
-vtkCxxSetObjectMacro(vtkContext2D, Transform, vtkTransform2D);
 
 //-----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkContext2D);
@@ -155,18 +154,7 @@ void vtkContext2D::DrawPoly(float *points, int n)
     }
 
   this->ApplyPen();
-
-  if (this->Transform)
-    {
-    float *p = new float[2*n];
-    this->Transform->TransformPoints(points, &p[0], n);
-    this->Device->DrawPoly(p, n);
-    delete[] p;
-    }
-  else
-    {
-    this->Device->DrawPoly(points, n);
-    }
+  this->Device->DrawPoly(points, n);
 }
 
 //-----------------------------------------------------------------------------
@@ -210,36 +198,22 @@ void vtkContext2D::DrawPoints(float *points, int n)
     }
 
   this->ApplyPen();
-  if (this->Transform)
-    {
-    float *p = new float[2*n];
-    this->Transform->TransformPoints(points, &p[0], n);
-    this->Device->DrawPoints(p, n);
-    delete[] p;
-    }
-  else
-    {
-    this->Device->DrawPoints(points, n);
-    }
+  this->Device->DrawPoints(points, n);
 }
 
 //-----------------------------------------------------------------------------
-void vtkContext2D::DrawRect(float x1, float y1, float x2, float y2)
+void vtkContext2D::DrawRect(float x, float y, float width, float height)
 {
   if (!this->Device)
     {
     vtkErrorMacro(<< "Attempted to paint with no active vtkContextDevice2D.");
     return;
     }
-  float p[] = { x1,    y1,
-                x1+x2, y1,
-                x1+x2, y1+y2,
-                x1,    y1+y2,
-                x1,    y1};
-  if (this->Transform)
-    {
-    this->Transform->TransformPoints(&p[0], &p[0], 5);
-    }
+  float p[] = { x,       y,
+                x+width, y,
+                x+width, y+height,
+                x,       y+height,
+                x,       y};
 
   // Draw the filled area of the rectangle.
   this->ApplyBrush();
@@ -316,10 +290,6 @@ void vtkContext2D::DrawString(float x, float y, const vtkStdString &string)
     return;
     }
   float f[] = { x, y };
-  if (this->Transform)
-    {
-    this->Transform->TransformPoints(&f[0], &f[0], 1);
-    }
   this->Device->DrawString(&f[0], this->TextProp, string);
 }
 
@@ -342,10 +312,6 @@ void vtkContext2D::DrawString(float x, float y, const char *string)
 void vtkContext2D::DrawImage(float x, float y, vtkImageData *image)
 {
   float p[] = { x, y };
-  if (this->Transform)
-    {
-    this->Transform->TransformPoints(&p[0], &p[0], 1);
-    }
   this->Device->DrawImage(&p[0], 1, image);
 }
 
@@ -354,6 +320,21 @@ unsigned int vtkContext2D::AddPointSprite(vtkImageData *image)
 {
   this->Device->AddPointSprite(image);
   return 0;
+}
+
+//-----------------------------------------------------------------------------
+void vtkContext2D::SetTransform(vtkTransform2D *transform)
+{
+  if (this->Transform)
+    {
+    this->Transform->Delete();
+    }
+  this->Transform = transform;
+  if (transform)
+    {
+    transform->Register(this);
+    this->Device->SetMatrix(transform->GetMatrix());
+    }
 }
 
 //-----------------------------------------------------------------------------

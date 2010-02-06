@@ -236,7 +236,8 @@ vtkIdType* vtkAMRDualContourEdgeLocator::GetEdgePointer(
   int axis = (ptIdx0 ^ ptIdx1);
   // Some fancy bit logic to increment cell index based on edge here.
   // Bitwise exclusive-or to mask the edge axis.
-  ptIdx0 = (ptIdx0 ^ axis);
+  //ptIdx0 = (ptIdx0 ^ axis); // This had a flaw.
+  ptIdx0 = (ptIdx0 & ptIdx1);
   // Adjusted index to 3 axis template.
   int xp0 = xCell;
   int yp0 = yCell;
@@ -601,6 +602,7 @@ void vtkAMRDualContourEdgeLocator::ShareBlockLocatorWithNeighbor(
 vtkAMRDualContour::vtkAMRDualContour()
 {
   this->IsoValue = 100.0;
+  this->SkipGhostCopy = 0;
   
   this->EnableDegenerateCells = 1;
   this->EnableCapping = 1;
@@ -718,6 +720,7 @@ int vtkAMRDualContour::RequestData(
   this->Helper = vtkAMRDualGridHelper::New();
   this->Helper->SetEnableDegenerateCells(this->EnableDegenerateCells);
   this->Helper->SetEnableMultiProcessCommunication(this->EnableMultiProcessCommunication);
+  this->Helper->SetSkipGhostCopy(this->SkipGhostCopy);
   this->Helper->Initialize(hbdsInput, arrayNameToProcess);
 
   vtkPolyData* mesh = vtkPolyData::New();

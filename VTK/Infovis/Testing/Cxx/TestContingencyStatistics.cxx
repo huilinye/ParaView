@@ -100,7 +100,7 @@ int TestContingencyStatistics( int, char *[] )
 
   datasetTable->Delete();
 
-  // Select Column Pair of Interest ( Learn Mode )
+  // Select Column Pair of Interest ( Learn Option )
   // 1.1: a valid pair
   cs->AddColumnPair( "Port", "Protocol" );
   // 1.2: the same valid pair, just reversed -- should thus be ignored
@@ -110,15 +110,17 @@ int TestContingencyStatistics( int, char *[] )
   // 3: an invalid pair
   cs->AddColumnPair( "Source", "Dummy" );
 
-  // Test Learn, Derive, and Assess options
+  // Test Learn, Derive, Assess, and Test options
   cs->SetLearnOption( true );
   cs->SetDeriveOption( true );
   cs->SetAssessOption( true );
+  cs->SetTestOption( true );
   cs->Update();
 
-  vtkMultiBlockDataSet* outputMetaDS = vtkMultiBlockDataSet::SafeDownCast( cs->GetOutputDataObject( vtkStatisticsAlgorithm::OUTPUT_MODEL ) );
-  vtkTable* outputSummary = vtkTable::SafeDownCast( outputMetaDS->GetBlock( 0 ) );
-  vtkTable* outputContingency = vtkTable::SafeDownCast( outputMetaDS->GetBlock( 1 ) );
+  vtkMultiBlockDataSet* outputModelDS = vtkMultiBlockDataSet::SafeDownCast( cs->GetOutputDataObject( vtkStatisticsAlgorithm::OUTPUT_MODEL ) );
+  vtkTable* outputSummary = vtkTable::SafeDownCast( outputModelDS->GetBlock( 0 ) );
+  vtkTable* outputContingency = vtkTable::SafeDownCast( outputModelDS->GetBlock( 1 ) );
+  vtkTable* outputTest = vtkTable::SafeDownCast( cs->GetOutputDataObject( vtkStatisticsAlgorithm::OUTPUT_TEST ) );
 
   int testIntValue = 0;
   double testDoubleValue = 0;
@@ -181,7 +183,7 @@ int TestContingencyStatistics( int, char *[] )
 
   cout << "\n";
 
-  cout << "## Calculated the following probabilities and mutual informations:\n";
+  cout << "## Calculated the following joint and conditional probabilities and mutual informations:\n";
   testIntValue = 0;
 
   // Skip first row which contains data set cardinality
@@ -224,7 +226,36 @@ int TestContingencyStatistics( int, char *[] )
     }
   cout << "\n";
 
-  // Now inspect results of the Assess mode by looking for outliers
+  cout << "## Calculated the following marginal probabilities:\n";
+  testIntValue = 0;
+
+  for ( unsigned int b = 2; b < outputModelDS->GetNumberOfBlocks(); ++ b )
+    {
+    outputContingency = vtkTable::SafeDownCast( outputModelDS->GetBlock( b ) );
+
+    for ( vtkIdType r = 0; r < outputContingency->GetNumberOfRows(); ++ r )
+      {
+      cout << "   "
+           << outputContingency->GetColumnName( 0 )
+           << " = "
+           << outputContingency->GetValue( r, 0 ).ToString()
+           << ", "
+           << outputContingency->GetColumnName( 1 )
+           << "="
+           << outputContingency->GetValue( r, 1 ).ToDouble()
+           << ", "
+           << outputContingency->GetColumnName( 2 )
+           << "="
+           << outputContingency->GetValue( r, 2 ).ToDouble()
+           << "\n";
+        }
+    cout << "\n";
+
+    // Update total cardinality
+    testIntValue += 0;//outputContingency->GetValueByName( r, "Cardinality" ).ToInt();
+    }
+
+  // Now inspect results of the Assess option by looking for outliers
   key = 0;
   vtkStdString varX = outputSummary->GetValue( key, 0 ).ToString();
   vtkStdString varY = outputSummary->GetValue( key, 1 ).ToString();
@@ -286,6 +317,81 @@ int TestContingencyStatistics( int, char *[] )
                              << ".");
       testStatus = 1;
       }
+    cout << "\n";
+    }
+
+  // Last, check some results of the Test option
+  cout << "## Chi square statistics:\n";
+
+  // Reference values
+  double testValues[] = { 
+    // (Port,Protocol) 
+    10.,       // number of degrees of freedom
+    36.896,    // Chi square statistic
+    22.35,     // Chi square statistic with Yates correction
+#ifdef VTK_USE_GNU_R
+    .00005899, // p-valued of Chi square statistic
+    .01341754, // p-value of Chi square statistic with Yates correction
+#endif // VTK_USE_GNU_R
+    // (Port,Source) 
+    10.,       // number of degrees of freedom
+    17.353,    // Chi square statistic
+    7.279,     // Chi square statistic with Yates correction
+#ifdef VTK_USE_GNU_R
+    .06690889, // p-valued of Chi square statistic
+    .69886917  // p-value of Chi square statistic with Yates correction
+#endif // VTK_USE_GNU_R
+  };
+
+#ifdef VTK_USE_GNU_R
+  double alpha = .05;
+  vtkIdType nv = 5;
+#else // VTK_USE_GNU_R
+  vtkIdType nv = 3;
+#endif // VTK_USE_GNU_R
+
+  // Loop over Test table
+  for ( vtkIdType r = 0; r < outputTest->GetNumberOfRows(); ++ r )
+    {
+    cout << "   ("
+         << outputSummary->GetValue( r, 0 ).ToString()
+         << ","
+         << outputSummary->GetValue( r, 1 ).ToString()
+         << ")";
+
+    for ( vtkIdType c = 0; c < nv; ++ c )
+      {
+      double x =  outputTest->GetValue( r, c ).ToDouble();
+      cout << ", "
+           << outputTest->GetColumnName( c )
+           << "="
+           << x;
+
+      // Verify calculated results
+      if ( fabs ( x - testValues[r * nv + c] ) > 1.e-4 * x )
+        {
+        vtkGenericWarningMacro("Incorrect " 
+                               << outputTest->GetColumnName( c )
+                               << ": "
+                               << x
+                               << " != "
+                               << testValues[r * nv + c]);
+        testStatus = 1;
+        }
+      }
+    
+#ifdef VTK_USE_GNU_R
+    // Check if null hypothesis is rejected at specified significance level
+    double p = outputTest->GetValueByName( r, "P Yates" ).ToDouble();
+    // Must verify that p value is valid (it is set to -1 if R has failed)
+    if ( p > -1 && p < alpha )
+      {
+      cout << ", Null hypothesis (independence) rejected at "
+           << alpha
+           << " significance level";
+      }
+#endif // VTK_USE_GNU_R
+
     cout << "\n";
     }
 

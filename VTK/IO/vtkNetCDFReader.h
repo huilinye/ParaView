@@ -42,6 +42,7 @@ class vtkDataSet;
 class vtkDoubleArray;
 class vtkIntArray;
 class vtkStdString;
+class vtkStringArray;
 
 class VTK_IO_EXPORT vtkNetCDFReader : public vtkDataObjectAlgorithm
 {
@@ -70,6 +71,41 @@ public:
   virtual int GetVariableArrayStatus(const char *name);
   virtual void SetVariableArrayStatus(const char *name, int status);
 
+  // Description:
+  // Returns an array with string encodings for the dimensions used in each of
+  // the variables.  The indices in the returned array correspond to those used
+  // in the GetVariableArrayName method.  Two arrays with the same dimensions
+  // will have the same encoded string returned by this method.
+  vtkGetObjectMacro(VariableDimensions, vtkStringArray);
+
+  // Description:
+  // Loads the grid with the given dimensions.  The dimensions are encoded in a
+  // string that conforms to the same format as returned by
+  // GetVariableDimensions and GetAllDimensions.  This method is really a
+  // convenience method for SetVariableArrayStatus.  It turns on all variables
+  // that have the given dimensions and turns off all other variables.
+  virtual void SetDimensions(const char *dimensions);
+
+  // Description:
+  // Returns an array with string encodings for the dimension combinations used
+  // in the variables.  The result is the same as GetVariableDimensions except
+  // that each entry in the array is unique (a set of dimensions is only given
+  // once even if it occurs for multiple variables) and the order is
+  // meaningless.
+  vtkGetObjectMacro(AllDimensions, vtkStringArray);
+
+  // Description:
+  // If on, any float or double variable read that has a _FillValue attribute
+  // will have that fill value replaced with a not-a-number (NaN) value.  The
+  // advantage of setting these to NaN values is that, if implemented properly
+  // by the system and careful math operations are used, they can implicitly be
+  // ignored by calculations like finding the range of the values.  That said,
+  // this option should be used with caution as VTK does not fully support NaN
+  // values and therefore odd calculations may occur.  By default this is off.
+  vtkGetMacro(ReplaceFillValueWithNan, int);
+  vtkSetMacro(ReplaceFillValueWithNan, int);
+  vtkBooleanMacro(ReplaceFillValueWithNan, int);
+
 protected:
   vtkNetCDFReader();
   ~vtkNetCDFReader();
@@ -84,7 +120,17 @@ protected:
   vtkSmartPointer<vtkIntArray> LoadingDimensions;
 
   vtkSmartPointer<vtkDataArraySelection> VariableArraySelection;
+
+  // Description:
+  // Placeholder for structure returned from GetVariableDimensions().
+  vtkStringArray *VariableDimensions;
+
+  // Description:
+  // Placeholder for structure returned from GetAllDimensions().
+  vtkStringArray *AllDimensions;
 //ETX
+
+  int ReplaceFillValueWithNan;
 
   virtual int RequestDataObject(vtkInformation *request,
                                 vtkInformationVector **inputVector,
@@ -113,6 +159,10 @@ protected:
   virtual int ReadMetaData(int ncFD);
 
   // Description:
+  // Fills the VariableDimensions array.
+  virtual int FillVariableDimensions(int ncFD);
+
+  // Description:
   // Determines whether the given variable is a time dimension.  The default
   // implementation bases the decision on the name of the variable.  Subclasses
   // should override this function if there is a more specific way to identify
@@ -129,6 +179,16 @@ protected:
   // values.  This method returns 0 on error, 1 otherwise.
   virtual vtkSmartPointer<vtkDoubleArray> GetTimeValues(int ncFD, int dimId);
 //ETX
+
+  // Description:
+  // Called internally to determine whether a variable with the given set of
+  // dimensions should be loaded as point data (return true) or cell data
+  // (return false).  The implementation in this class always returns true.
+  // Subclasses should override to load cell data for some or all variables.
+  virtual bool DimensionsAreForPointData(const int *vtkNotUsed(dimensions),
+                                         int vtkNotUsed(numDimensions)) {
+    return true;
+  }
 
   // Description:
   // Load the variable at the given time into the given data set.  Return 1

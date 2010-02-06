@@ -38,6 +38,7 @@
 #include "vtkStructuredPointsReader.h"
 #include "vtkStructuredPointsWriter.h"
 #include "vtkTemporalDataSet.h"
+#include "vtkTypeTraits.h"
 #include "vtkUnsignedCharArray.h"
 #include "vtkUnsignedLongArray.h"
 
@@ -108,7 +109,7 @@ vtkCommunicator::vtkCommunicator()
 {
   this->LocalProcessId = 0;
   this->NumberOfProcesses = 1;
-  this->MaximumNumberOfProcesses = vtkMultiProcessController::MAX_PROCESSES;
+  this->MaximumNumberOfProcesses = vtkTypeTraits<int>::Max();
   this->Count = 0;
 }
 
@@ -264,7 +265,7 @@ int vtkCommunicator::SendTemporalDataSet(vtkTemporalDataSet* mbds,
     if (block)
       {
       // Now, send the actual block data.
-      remoteHandle = returnCode && this->Send(block, remoteHandle, tag);
+      returnCode = returnCode && this->Send(block, remoteHandle, tag);
       }
     }
 

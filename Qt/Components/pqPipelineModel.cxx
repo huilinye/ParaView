@@ -481,8 +481,17 @@ void pqPipelineModel::setSubtreeSelectable(pqServerManagerModelItem *smitem,
     smitem = port->getSource();
     }
 
-  pqPipelineModelDataItem* item = this->getDataItem(smitem,
-    &this->Internal->Root, pqPipelineModel::Proxy);
+  pqPipelineModelDataItem* item;
+  pqServer* server = qobject_cast<pqServer*>(smitem);
+  if (server)
+    {
+    item = this->getDataItem(smitem, &this->Internal->Root, pqPipelineModel::Server);
+    }
+  else
+    {
+    item = this->getDataItem(smitem,
+      &this->Internal->Root, pqPipelineModel::Proxy);
+    }
   this->setSubtreeSelectable(item, selectable);
 }
   
@@ -1185,6 +1194,14 @@ void pqPipelineModel::updateVisibility(pqPipelineSource* source)
   if (item)
     {
     item->updateVisibilityIcon(this->View, false);
+    foreach (pqPipelineModelDataItem* child, item->Children)
+      {
+      if (child->Type == Port)
+        {
+        child->updateVisibilityIcon(this->View, false);
+        }
+      }
+
     foreach (pqPipelineModelDataItem* link, item->Links)
       {
       link->updateVisibilityIcon(this->View, false);
@@ -1199,9 +1216,11 @@ void pqPipelineModel::updateData(pqServerManagerModelItem* source)
     &this->Internal->Root, pqPipelineModel::Proxy);
   if (item)
     {
+    item->updateVisibilityIcon(this->View, false);
     this->itemDataChanged(item);
     foreach (pqPipelineModelDataItem* link, item->Links)
       {
+      item->updateVisibilityIcon(this->View, false);
       this->itemDataChanged(link);
       }
     }

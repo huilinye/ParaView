@@ -60,6 +60,13 @@ vtkCxxSetObjectMacro(vtkChart, AnnotationLink, vtkAnnotationLink);
 //-----------------------------------------------------------------------------
 vtkChart::vtkChart()
 {
+  this->Geometry[0] = 0;
+  this->Geometry[1] = 0;
+  this->Point1[0] = 0;
+  this->Point1[1] = 0;
+  this->Point2[0] = 0;
+  this->Point2[1] = 0;
+
   this->Observer = vtkChart::Command::New();
   this->Observer->SetTarget(this);
   this->AnnotationLink = NULL;
@@ -78,9 +85,63 @@ vtkPlot * vtkChart::AddPlot(Type)
 }
 
 //-----------------------------------------------------------------------------
+bool vtkChart::RemovePlot(vtkIdType)
+{
+  return false;
+}
+
+//-----------------------------------------------------------------------------
+void vtkChart::ClearPlots()
+{
+}
+
+//-----------------------------------------------------------------------------
+vtkPlot* vtkChart::GetPlot(vtkIdType)
+{
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
 vtkIdType vtkChart::GetNumberPlots()
 {
   return 0;
+}
+
+//-----------------------------------------------------------------------------
+void vtkChart::SetBottomBorder(int border)
+{
+  this->Point1[1] = border >= 0 ? border : 0;
+}
+
+//-----------------------------------------------------------------------------
+void vtkChart::SetTopBorder(int border)
+{
+ this->Point2[1] = border >=0 ?
+                   this->Geometry[1] - border :
+                   this->Geometry[1];
+}
+
+//-----------------------------------------------------------------------------
+void vtkChart::SetLeftBorder(int border)
+{
+  this->Point1[0] = border >= 0 ? border : 0;
+}
+
+//-----------------------------------------------------------------------------
+void vtkChart::SetRightBorder(int border)
+{
+  this->Point2[0] = border >=0 ?
+                    this->Geometry[0] - border :
+                    this->Geometry[0];
+}
+
+//-----------------------------------------------------------------------------
+void vtkChart::SetBorders(int left, int right, int top, int bottom)
+{
+  this->SetLeftBorder(left);
+  this->SetRightBorder(right);
+  this->SetTopBorder(top);
+  this->SetBottomBorder(bottom);
 }
 
 //-----------------------------------------------------------------------------
@@ -117,10 +178,10 @@ void vtkChart::PrintSelf(ostream &os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os, indent);
   // Print out the chart's geometry if it has been set
-  os << indent << "Origin: " << this->Geometry[0] << "\t" << this->Geometry[1]
+  os << indent << "Point1: " << this->Point1[0] << "\t" << this->Point1[1]
      << endl;
-  os << indent << "Width: " << this->Geometry[2] << endl
-     << indent << "Height: " << this->Geometry[3] << endl;
-  os << indent << "Right border: " << this->Geometry[4] << endl
-     << indent << "Top border: " << this->Geometry[5] << endl;
+  os << indent << "Point2: " << this->Point2[0] << "\t" << this->Point2[1]
+     << endl;
+  os << indent << "Width: " << this->Geometry[0] << endl
+     << indent << "Height: " << this->Geometry[1] << endl;
 }

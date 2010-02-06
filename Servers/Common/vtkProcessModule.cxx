@@ -646,6 +646,19 @@ void vtkProcessModule::Disconnect(vtkIdType id)
 }
 
 //-----------------------------------------------------------------------------
+void vtkProcessModule::AddManagedSocket(vtkSocket* soc,
+  vtkProcessModuleConnection* conn)
+{
+  this->ConnectionManager->AddManagedSocket(soc, conn);
+}
+
+//-----------------------------------------------------------------------------
+void vtkProcessModule::RemoveManagedSocket(vtkSocket* soc)
+{
+  this->ConnectionManager->RemoveManagedSocket(soc);
+}
+
+//-----------------------------------------------------------------------------
 int vtkProcessModule::ConnectToRemote()
 {
   const char* message = "client";
@@ -1351,8 +1364,8 @@ void vtkProcessModule::SetLocalProgress(const char* filter, int progress)
 {
   if (!this->GUIHelper)
     {
-    vtkErrorMacro("GUIHelper must be set for SetLocalProgress " << filter
-      << " " << progress);
+    //vtkErrorMacro("GUIHelper must be set for SetLocalProgress " << filter
+    //  << " " << progress);
     return;
     }
   this->LastProgress = progress;

@@ -76,8 +76,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vtkProcessModule.h"
 #include "vtkPVXMLElement.h"
 #include "vtkPVXMLParser.h"
+#include "vtkSMApplication.h"
 #include "vtkSmartPointer.h"
 #include "vtkSMGlobalPropertiesManager.h"
+#include "vtkSMPluginManager.h"
 #include "vtkSMProperty.h"
 #include "vtkSMPropertyHelper.h"
 #include "vtkSMPropertyIterator.h"
@@ -85,25 +87,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vtkSMProxyManager.h"
 #include "vtkSMReaderFactory.h"
 #include "vtkSMWriterFactory.h"
-
-static void QtMessageOutput(QtMsgType type, const char *msg)
-{
-  switch(type)
-    {
-  case QtDebugMsg:
-    vtkOutputWindow::GetInstance()->DisplayText(msg);
-    break;
-  case QtWarningMsg:
-    vtkOutputWindow::GetInstance()->DisplayErrorText(msg);
-    break;
-  case QtCriticalMsg:
-    vtkOutputWindow::GetInstance()->DisplayErrorText(msg);
-    break;
-  case QtFatalMsg:
-    vtkOutputWindow::GetInstance()->DisplayErrorText(msg);
-    break;
-    }
-}
 
 //-----------------------------------------------------------------------------
 class pqApplicationCore::pqInternals
@@ -292,7 +275,6 @@ void pqApplicationCore::createOutputWindow()
 {
   // Set up error window.
   pqOutputWindowAdapter* owAdapter = pqOutputWindowAdapter::New();
-  qInstallMsgHandler(::QtMessageOutput);
   this->OutputWindow = new pqOutputWindow(0);
   this->OutputWindow->setAttribute(Qt::WA_QuitOnClose, false);
   this->OutputWindow->connect(owAdapter,
@@ -306,7 +288,6 @@ void pqApplicationCore::createOutputWindow()
     SLOT(onDisplayGenericWarningText(const QString&)));
   vtkOutputWindow::SetInstance(owAdapter);
   this->OutputWindowAdapter = owAdapter;
-
 }
 
 //-----------------------------------------------------------------------------
@@ -619,14 +600,18 @@ pqSettings* pqApplicationCore::settings()
       vtkProcessModule::GetProcessModule()->GetOptions());
     if (options && options->GetDisableRegistry())
       {
-      this->Settings = new pqSettings(QApplication::organizationName(),
-        QApplication::applicationName() + ".DisabledRegistry", this);
+      this->Settings = new pqSettings(
+        QApplication::organizationName(),
+        QApplication::applicationName() + QApplication::applicationVersion() 
+        + ".DisabledRegistry", this);
       this->Settings->clear();
       }
     else
       {
-      this->Settings = new pqSettings(QApplication::organizationName(),
-        QApplication::applicationName(), this);
+      this->Settings = new pqSettings(
+        QApplication::organizationName(),
+        QApplication::applicationName() + QApplication::applicationVersion(),
+        this);
       }
     }
   return this->Settings;
@@ -719,4 +704,26 @@ pqTestUtility* pqApplicationCore::testUtility()
     this->TestUtility = new pqCoreTestUtility(this);
     }
   return this->TestUtility;
+}
+
+//-----------------------------------------------------------------------------
+void pqApplicationCore::loadDistributedPlugins(const char* filename)
+{
+  QString config_file = filename;
+  if (!filename)
+    {
+    config_file = QApplication::applicationDirPath() +  "/.plugins";
+#if defined(__APPLE__)
+
+    // for installed applications.
+    config_file = QApplication::applicationDirPath() + "/../Support/.plugins";
+    if (!QFile::exists(config_file))
+      {
+      config_file =  QApplication::applicationDirPath() + "/../../../.plugins";
+      }
+#endif
+    }
+
+  vtkSMApplication::GetApplication()->GetPluginManager()->LoadPluginConfigurationXML(
+    config_file.toStdString().c_str());
 }

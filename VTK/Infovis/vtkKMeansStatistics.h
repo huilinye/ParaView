@@ -43,12 +43,15 @@ PURPOSE.  See the above copyright notice for more information.
 // results of the algorithm are dependent on the initial cluster centers, 
 // we provide a mechanism for the user to test multiple runs or sets of cluster centers
 // within a single call to the Learn phase.  The first column of the table identifies 
-// the number of clusters K in the particular run, while the remaining columns are a 
+// the number of clusters K in the particular run (the entries in this column should be 
+// of type vtkIdType), while the remaining columns are a 
 // subset of the columns contained in the table on port INPUT_DATA.  We require that 
 // all user specified clusters be of the same dimension N and consequently, that the 
 // LEARN_PARAMETERS table have N+1 columns. Due to this restriction, only one request
 // can be processed for each call to the Learn phase and subsequent requests are 
-// silently ignored. 
+// silently ignored. Note that, if the first column of the LEARN_PARAMETERS table is not 
+// of type vtkIdType, then the table will be ignored and a single run will be performed using
+// the first DefaultNumberOfClusters input data observations as initial cluster centers.
 //
 // When the user does not supply an initial set of clusters, then the first 
 // DefaultNumberOfClusters input data observations are used as initial cluster 
@@ -152,8 +155,10 @@ protected:
   virtual void Derive( vtkDataObject* );
 
   // Description:
-  // Execute the calculations required by the Derive option.
-  virtual void Assess( vtkTable*, vtkDataObject*, vtkTable*, vtkDataObject* );
+  // Execute the calculations required by the Assess option.
+  virtual void Assess( vtkTable*, 
+                       vtkDataObject*, 
+                       vtkTable* );
 
   // Description:
   // Execute the calculations required by the Learn option.

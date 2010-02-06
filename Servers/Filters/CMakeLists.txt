@@ -18,6 +18,7 @@ IF(PARAVIEW_ENABLE_PYTHON)
 ENDIF(PARAVIEW_ENABLE_PYTHON)
 
 SET(Filters_SRCS
+  vtkAMRDualClip.cxx
   vtkAMRDualContour.cxx
   vtkAMRDualGridHelper.cxx
   vtkAnimationPlayer.cxx
@@ -47,6 +48,7 @@ SET(Filters_SRCS
   vtkExtractScatterPlot.cxx
   vtkFileSeriesReader.cxx
   vtkFileSeriesWriter.cxx
+  vtkFlashReader.cxx
   vtkHierarchicalFractal.cxx
   vtkGridConnectivity.cxx
   vtkImageCompressor.cxx
@@ -130,6 +132,7 @@ SET(Filters_SRCS
   vtkPVUpdateSuppressor.cxx
   vtkPVHardwareSelector.cxx
   vtkRealtimeAnimationPlayer.cxx
+  vtkRectilinearGridConnectivity.cxx
   vtkReductionFilter.cxx
   vtkScatterPlotMapper.cxx
   vtkScatterPlotPainter.cxx

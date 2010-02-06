@@ -37,11 +37,6 @@ int TestLinePlot( int argc, char * argv [] )
   VTK_CREATE(vtkChartXY, chart);
   view->GetScene()->AddItem(chart);
 
-  int p[] = { 800, 600,
-              60, 60,
-              20, 20 };
-  chart->SetGeometry(&p[0]);
-
   // Create a table with some points in it...
   VTK_CREATE(vtkTable, table);
   VTK_CREATE(vtkFloatArray, arrX);
@@ -85,6 +80,6 @@ int TestLinePlot( int argc, char * argv [] )
   //Finally render the scene and compare the image to a reference image
   view->Render();
   view->GetRenderWindow()->SetMultiSamples(0);
-  int retVal = vtkRegressionTestImage(view->GetRenderWindow());
+  int retVal = vtkRegressionTestImageThreshold(view->GetRenderWindow(), 25);
   return !retVal;
 }

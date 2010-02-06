@@ -12,6 +12,12 @@ ELSE(VTK_USE_OGGTHEORA_ENCODER)
   set(_VTK_OGGTHEORA_SOURCES)
 ENDIF(VTK_USE_OGGTHEORA_ENCODER)
 
+IF(VTK_USE_OPENFOAM)
+  set(_VTK_OPENFOAM_SOURCES vtkOpenFOAMReader.cxx)
+ELSE(VTK_USE_OPENFOAM)
+  set(_VTK_OPENFOAM_SOURCES)
+ENDIF(VTK_USE_OPENFOAM)
+
 SET(KIT IO)
 SET(UKIT IO)
 SET(KIT_TCL_LIBS vtkFilteringTCL)
@@ -35,7 +41,6 @@ vtkBase64OutputStream.cxx
 vtkBase64Utilities.cxx
 vtkCGMWriter.cxx
 vtkChacoReader.cxx
-vtkCosmoReader.cxx
 vtkDEMReader.cxx
 vtkDICOMImageReader.cxx
 vtkDataCompressor.cxx
@@ -86,12 +91,12 @@ vtkMINCImageReader.cxx
 vtkMINCImageWriter.cxx
 vtkMultiBlockPLOT3DReader.cxx
 vtkMoleculeReaderBase.cxx
-vtkNetCDFCOARDSReader.cxx
+vtkNetCDFCFReader.cxx
 vtkNetCDFReader.cxx
 vtkOBJReader.cxx
 ${_VTK_OGGTHEORA_SOURCES}
+${_VTK_OPENFOAM_SOURCES}
 vtkOutputStream.cxx
-vtkOpenFOAMReader.cxx
 vtkPDBReader.cxx
 vtkPLOT3DReader.cxx
 vtkPLY.cxx
@@ -251,12 +256,25 @@ ENDIF(WIN32)
 # FFMPEG
 # If the ffmpeg library is available, compile vtkFFMPEGWriter.
 IF (VTK_USE_FFMPEG_ENCODER)
+  INCLUDE(${VTK_CMAKE_DIR}/vtkTestFFMPEG.cmake)
+
+  CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/vtkFFMPEGConfig.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/vtkFFMPEGConfig.h @ONLY)
+  INCLUDE_DIRECTORIES(${VTK_BINARY_DIR}/IO)
+  INSTALL(FILES vtkFFMPEGConfig.h
+    DESTINATION ${VTK_INSTALL_INCLUDE_DIR_CM24}
+    COMPONENT Development)
+
   INCLUDE_DIRECTORIES(${FFMPEG_INCLUDE_DIR})
   SET(Kit_SRCS ${Kit_SRCS} vtkFFMPEGWriter.cxx)
   SET(KIT_LIBS ${KIT_LIBS}
     ${FFMPEG_avformat_LIBRARY}
     ${FFMPEG_avcodec_LIBRARY}
     ${FFMPEG_avutil_LIBRARY})
+  IF (NOT VTK_FFMPEG_HAS_IMG_CONVERT)
+    SET(KIT_LIBS ${KIT_LIBS}
+      ${FFMPEG_swscale_LIBRARY})
+  ENDIF (NOT VTK_FFMPEG_HAS_IMG_CONVERT)
 ENDIF (VTK_USE_FFMPEG_ENCODER)
 
 #-----------------------------------------------------------------------------

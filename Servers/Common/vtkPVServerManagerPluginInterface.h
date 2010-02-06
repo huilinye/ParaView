@@ -22,11 +22,13 @@
 #define __vtkPVServerManagerPluginInterface_h
 
 #include "vtkProcessModule.h"
+#include <vtkstd/vector> // STL Header
+#include <vtkstd/string> // STL Header
 
 class VTK_EXPORT vtkPVServerManagerPluginInterface
 {
 public:
-  virtual ~vtkPVServerManagerPluginInterface() { }
+  virtual ~vtkPVServerManagerPluginInterface();
 
   // Description:
   // Obtain the server-manager configuration xmls, if any.

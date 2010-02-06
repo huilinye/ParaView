@@ -37,12 +37,12 @@
 #include <vtkImageActor.h>
 #include <vtkSmartPointer.h>
 
-int main (int argc, char **argv)
+int main (int argc, char *argv[])
 {
   if (argc < 2)
     {
     cout << "Usage: " << argv[0] << " DATADIR/headsq/quarter" << endl;
-    return 1;
+    return EXIT_FAILURE;
     }
 
   // Create the renderer, the render window, and the interactor. The
@@ -50,8 +50,7 @@ int main (int argc, char **argv)
   // mouse- and keyboard-based interaction with the data within the
   // render window.
   //
-  vtkSmartPointer<vtkRenderer> aRenderer =
-    vtkSmartPointer<vtkRenderer>::New();
+  vtkSmartPointer<vtkRenderer> aRenderer = vtkSmartPointer<vtkRenderer>::New();
   vtkSmartPointer<vtkRenderWindow> renWin =
     vtkSmartPointer<vtkRenderWindow>::New();
   renWin->AddRenderer(aRenderer);
@@ -59,19 +58,25 @@ int main (int argc, char **argv)
     vtkSmartPointer<vtkRenderWindowInteractor>::New();
   iren->SetRenderWindow(renWin);
 
+  // Set a background color for the renderer and set the size of the
+  // render window (expressed in pixels).
+  aRenderer->SetBackground(.2, .3, .4);
+  renWin->SetSize(640, 480);
+  
   // The following reader is used to read a series of 2D slices (images)
   // that compose the volume. The slice dimensions are set, and the
   // pixel spacing. The data Endianness must also be specified. The
-  // reader usese the FilePrefix in combination with the slice number to
+  // reader uses the FilePrefix in combination with the slice number to
   // construct filenames using the format FilePrefix.%d. (In this case
   // the FilePrefix is the root name of the file: quarter.)
   vtkSmartPointer<vtkVolume16Reader> v16 =
     vtkSmartPointer<vtkVolume16Reader>::New();
   v16->SetDataDimensions(64,64);
+  v16->SetImageRange(1, 93);
   v16->SetDataByteOrderToLittleEndian();
   v16->SetFilePrefix (argv[1]);
-  v16->SetImageRange(1, 93);
   v16->SetDataSpacing (3.2, 3.2, 1.5);
+  v16->Update();
 
   // An isosurface, or contour value of 500 is known to correspond to
   // the skin of the patient. Once generated, a vtkPolyDataNormals
@@ -83,15 +88,18 @@ int main (int argc, char **argv)
     vtkSmartPointer<vtkContourFilter>::New();
   skinExtractor->SetInputConnection( v16->GetOutputPort());
   skinExtractor->SetValue(0, 500);
+  skinExtractor->Update();
 
   vtkSmartPointer<vtkPolyDataNormals> skinNormals =
     vtkSmartPointer<vtkPolyDataNormals>::New();
   skinNormals->SetInputConnection(skinExtractor->GetOutputPort());
   skinNormals->SetFeatureAngle(60.0);
+  skinNormals->Update();
 
   vtkSmartPointer<vtkStripper> skinStripper =
     vtkSmartPointer<vtkStripper>::New();
   skinStripper->SetInputConnection(skinNormals->GetOutputPort());
+  skinStripper->Update();
 
   vtkSmartPointer<vtkPolyDataMapper> skinMapper =
     vtkSmartPointer<vtkPolyDataMapper>::New();
@@ -129,6 +137,7 @@ int main (int argc, char **argv)
     vtkSmartPointer<vtkPolyDataMapper>::New();
   boneMapper->SetInputConnection(boneStripper->GetOutputPort());
   boneMapper->ScalarVisibilityOff();
+
   vtkSmartPointer<vtkActor> bone =
     vtkSmartPointer<vtkActor>::New();
   bone->SetMapper(boneMapper);
@@ -139,6 +148,7 @@ int main (int argc, char **argv)
   vtkSmartPointer<vtkOutlineFilter> outlineData =
     vtkSmartPointer<vtkOutlineFilter>::New();
   outlineData->SetInputConnection(v16->GetOutputPort());
+  outlineData->Update();
 
   vtkSmartPointer<vtkPolyDataMapper> mapOutline =
     vtkSmartPointer<vtkPolyDataMapper>::New();
@@ -153,7 +163,7 @@ int main (int argc, char **argv)
   // volume. Each plane uses a different texture map and therefore has
   // different coloration.
 
-  // Start by creatin a black/white lookup table.
+  // Start by creating a black/white lookup table.
   vtkSmartPointer<vtkLookupTable> bwLut =
     vtkSmartPointer<vtkLookupTable>::New();
   bwLut->SetTableRange (0, 2000);
@@ -194,6 +204,7 @@ int main (int argc, char **argv)
     vtkSmartPointer<vtkImageMapToColors>::New();
   sagittalColors->SetInputConnection(v16->GetOutputPort());
   sagittalColors->SetLookupTable(bwLut);
+  sagittalColors->Update();
 
   vtkSmartPointer<vtkImageActor> sagittal =
     vtkSmartPointer<vtkImageActor>::New();
@@ -206,6 +217,7 @@ int main (int argc, char **argv)
     vtkSmartPointer<vtkImageMapToColors>::New();
   axialColors->SetInputConnection(v16->GetOutputPort());
   axialColors->SetLookupTable(hueLut);
+  axialColors->Update();
 
   vtkSmartPointer<vtkImageActor> axial =
     vtkSmartPointer<vtkImageActor>::New();
@@ -218,6 +230,7 @@ int main (int argc, char **argv)
     vtkSmartPointer<vtkImageMapToColors>::New();
   coronalColors->SetInputConnection(v16->GetOutputPort());
   coronalColors->SetLookupTable(satLut);
+  coronalColors->Update();
 
   vtkSmartPointer<vtkImageActor> coronal =
     vtkSmartPointer<vtkImageActor>::New();
@@ -234,12 +247,12 @@ int main (int argc, char **argv)
   aCamera->SetPosition (0, 1, 0);
   aCamera->SetFocalPoint (0, 0, 0);
   aCamera->ComputeViewPlaneNormal();
+  aCamera->Azimuth(30.0);
+  aCamera->Elevation(30.0);
 
   // Actors are added to the renderer. 
   aRenderer->AddActor(outline);
   aRenderer->AddActor(sagittal);
-  aRenderer->AddActor(axial);
-  aRenderer->AddActor(coronal);
   aRenderer->AddActor(axial);
   aRenderer->AddActor(coronal);
   aRenderer->AddActor(skin);
@@ -254,15 +267,14 @@ int main (int argc, char **argv)
   // An initial camera view is created.  The Dolly() method moves 
   // the camera towards the FocalPoint, thereby enlarging the image.
   aRenderer->SetActiveCamera(aCamera);
-  aRenderer->Render();
+  
+  // Calling Render() directly on a vtkRenderer is strictly forbidden.
+  // Only calling Render() on the vtkRenderWindow is a valid call.
+  renWin->Render();
+  
   aRenderer->ResetCamera ();
   aCamera->Dolly(1.5);
-
-  // Set a background color for the renderer and set the size of the
-  // render window (expressed in pixels).
-  aRenderer->SetBackground(.2, .3, .4);
-  renWin->SetSize(640, 480);
-
+  
   // Note that when camera movement occurs (as it does in the Dolly()
   // method), the clipping planes often need adjusting. Clipping planes
   // consist of two planes: near and far along the view direction. The 
@@ -275,5 +287,5 @@ int main (int argc, char **argv)
   iren->Initialize();
   iren->Start(); 
 
-  return 0;
+  return EXIT_SUCCESS;
 }

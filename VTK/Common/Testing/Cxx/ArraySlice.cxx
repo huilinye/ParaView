@@ -19,6 +19,7 @@
 
 =========================================================================*/
 
+#include <vtkArrayCoordinates.h>
 #include <vtkArraySlice.h>
 
 #include <vtksys/ios/iostream>
@@ -47,13 +48,28 @@ int ArraySlice(int vtkNotUsed(argc), char *vtkNotUsed(argv)[])
     test_expression(slice.GetExtents()[1] == 3);
     test_expression(slice.GetExtents().GetSize() == 6);
 
+    vtkArrayCoordinates coordinates;
     for(vtkIdType n = 0; n != slice.GetExtents().GetSize(); ++n)
-      cerr << slice.GetCoordinatesN(n) << endl;
+      {
+      slice.GetCoordinatesN(n, coordinates);
+      cerr << coordinates << endl;
+      }
 
-    test_expression(slice.GetCoordinatesN(0) == vtkArrayCoordinates(2, 6));
-    test_expression(slice.GetCoordinatesN(1) == vtkArrayCoordinates(2, 7));
-    test_expression(slice.GetCoordinatesN(2) == vtkArrayCoordinates(2, 8));
-    test_expression(slice.GetCoordinatesN(3) == vtkArrayCoordinates(3, 6));
+    slice.GetCoordinatesN(0, coordinates);
+    test_expression(coordinates == vtkArrayCoordinates(2, 6));
+    slice.GetCoordinatesN(1, coordinates);
+    test_expression(coordinates == vtkArrayCoordinates(3, 6));
+    slice.GetCoordinatesN(2, coordinates);
+    test_expression(coordinates == vtkArrayCoordinates(2, 7));
+    slice.GetCoordinatesN(3, coordinates);
+    test_expression(coordinates == vtkArrayCoordinates(3, 7));
+    slice.GetCoordinatesN(4, coordinates);
+    test_expression(coordinates == vtkArrayCoordinates(2, 8));
+    slice.GetCoordinatesN(5, coordinates);
+    test_expression(coordinates == vtkArrayCoordinates(3, 8));
+
+    test_expression(slice.Contains(vtkArrayCoordinates(3, 7)));
+    test_expression(!slice.Contains(vtkArrayCoordinates(1, 7)));
 
     return 0;
     }

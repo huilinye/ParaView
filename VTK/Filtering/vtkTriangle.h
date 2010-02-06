@@ -64,6 +64,10 @@ public:
   virtual double *GetParametricCoords();
 
   // Description:
+  // A convenience function to compute the area of a vtkTriangle.
+  double ComputeArea();
+
+  // Description:
   // Clip this triangle using scalar value provided. Like contouring, except
   // that it cuts the triangle to produce other triangles.
   void Clip(double value, vtkDataArray *cellScalars,
@@ -116,6 +120,7 @@ public:
 
   // Description:
   // Compute the area of a triangle in 3D.
+  // See also vtkTriangle::ComputeArea()
   static double TriangleArea(double p1[3], double p2[3], double p3[3]);
 
   // Description:

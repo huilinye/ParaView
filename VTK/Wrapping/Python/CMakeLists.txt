@@ -46,7 +46,11 @@ IF (APPLE)
       )
   ENDIF(VTK_USE_CARBON AND VTK_APPLE_RESOURCE)
 
-  SET(VTKPYTHON_LINK_FLAGS "-flat_namespace -undefined suppress -u _PyMac_Error")
+  IF(VTK_USE_MATLAB_MEX)
+   SET(VTKPYTHON_LINK_FLAGS "-u _PyMac_Error")
+  ELSE(VTK_USE_MATLAB_MEX)
+   SET(VTKPYTHON_LINK_FLAGS "-flat_namespace -undefined suppress -u _PyMac_Error")
+  ENDIF(VTK_USE_MATLAB_MEX)
 ENDIF (APPLE)
 
 # Link against all the kit wrappers.
@@ -155,6 +159,8 @@ IF (VTK_USE_VIEWS)
       )
 ENDIF (VTK_USE_VIEWS)
 
+# The PYTHON_ADD_MODULE macro stores the list of static modules in a global property
+GET_PROPERTY(PY_STATIC_MODULES_LIST GLOBAL PROPERTY PY_STATIC_MODULES_LIST)
 IF(PY_STATIC_MODULES_LIST)
   SET(VTKPYTHON_LINK_LIBS ${VTKPYTHON_LINK_LIBS} ${PY_STATIC_MODULES_LIST})
 ENDIF(PY_STATIC_MODULES_LIST)

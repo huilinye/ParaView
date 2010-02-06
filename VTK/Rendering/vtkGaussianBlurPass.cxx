@@ -53,6 +53,8 @@ vtkGaussianBlurPass::vtkGaussianBlurPass()
   this->Pass1=0;
   this->Pass2=0;
   this->BlurProgram=0;
+  this->Supported=false;
+  this->SupportProbed=false;
 }
 
 // ----------------------------------------------------------------------------
@@ -96,34 +98,73 @@ void vtkGaussianBlurPass::Render(const vtkRenderState *s)
   
   if(this->DelegatePass!=0)
     {
-    // Test for Hardware support. If not supported, just render the delegate.
-    bool supported=vtkFrameBufferObject::IsSupported(r->GetRenderWindow());
-    
-    if(!supported)
+    if(!this->SupportProbed)
       {
-      vtkErrorMacro("FBOs are not supported by the context. Cannot blur the image.");
-      }
-    if(supported)
-      {
-      supported=vtkTextureObject::IsSupported(r->GetRenderWindow());
+      this->SupportProbed=true;
+      // Test for Hardware support. If not supported, just render the delegate.
+      bool supported=vtkFrameBufferObject::IsSupported(r->GetRenderWindow());
+      
       if(!supported)
         {
-        vtkErrorMacro("Texture Objects are not supported by the context. Cannot blur the image.");
+        vtkErrorMacro("FBOs are not supported by the context. Cannot blur the image.");
         }
-      }
-    
-    if(supported)
-      {
-      supported=
-        vtkShaderProgram2::IsSupported(static_cast<vtkOpenGLRenderWindow *>(
-                                         r->GetRenderWindow()));
-      if(!supported)
+      if(supported)
         {
-        vtkErrorMacro("GLSL is not supported by the context. Cannot blur the image.");
+        supported=vtkTextureObject::IsSupported(r->GetRenderWindow());
+        if(!supported)
+          {
+          vtkErrorMacro("Texture Objects are not supported by the context. Cannot blur the image.");
+          }
         }
+      
+      if(supported)
+        {
+        supported=
+          vtkShaderProgram2::IsSupported(static_cast<vtkOpenGLRenderWindow *>(
+                                           r->GetRenderWindow()));
+        if(!supported)
+          {
+          vtkErrorMacro("GLSL is not supported by the context. Cannot blur the image.");
+          }
+        }
+      
+      if(supported)
+        {
+        // FBO extension is supported. Is the specific FBO format supported?
+        if(this->FrameBufferObject==0)
+          {
+          this->FrameBufferObject=vtkFrameBufferObject::New();
+          this->FrameBufferObject->SetContext(r->GetRenderWindow());
+          }
+        if(this->Pass1==0)
+          {
+          this->Pass1=vtkTextureObject::New();
+          this->Pass1->SetContext(r->GetRenderWindow());
+          }
+        this->Pass1->Create2D(64,64,4,VTK_UNSIGNED_CHAR,false);
+        this->FrameBufferObject->SetColorBuffer(0,this->Pass1);
+        this->FrameBufferObject->SetNumberOfRenderTargets(1);
+        this->FrameBufferObject->SetActiveBuffer(0);
+        this->FrameBufferObject->SetDepthBufferNeeded(true);
+        
+        GLint savedCurrentDrawBuffer;
+        glGetIntegerv(GL_DRAW_BUFFER,&savedCurrentDrawBuffer);
+        supported=this->FrameBufferObject->StartNonOrtho(64,64,false);
+        if(!supported)
+          {
+          vtkErrorMacro("The requested FBO format is not supported by the context. Cannot blur the image.");
+          }
+        else
+          {
+          this->FrameBufferObject->UnBind();
+          glDrawBuffer(static_cast<GLenum>(savedCurrentDrawBuffer));
+          }
+        }
+      
+      this->Supported=supported;
       }
     
-    if(!supported)
+    if(!this->Supported)
       {
       this->DelegatePass->Render(s);
       this->NumberOfRenderedProps+=
@@ -214,7 +255,9 @@ void vtkGaussianBlurPass::Render(const vtkRenderState *s)
     if(this->Pass2->GetWidth()!=static_cast<unsigned int>(w) ||
        this->Pass2->GetHeight()!=static_cast<unsigned int>(h))
       {
-      this->Pass2->Create2D(w,h,4,VTK_UNSIGNED_CHAR,false);
+      this->Pass2->Create2D(static_cast<unsigned int>(w),
+                            static_cast<unsigned int>(h),4,
+                            VTK_UNSIGNED_CHAR,false);
       }
     
     this->FrameBufferObject->SetColorBuffer(0,this->Pass2);
@@ -259,7 +302,7 @@ void vtkGaussianBlurPass::Render(const vtkRenderState *s)
       
       // restore some state.
       this->FrameBufferObject->UnBind();
-      glDrawBuffer(savedDrawBuffer);
+      glDrawBuffer(static_cast<GLenum>(savedDrawBuffer));
       return;
       }
     
@@ -268,7 +311,7 @@ void vtkGaussianBlurPass::Render(const vtkRenderState *s)
       static_cast<vtkOpenGLRenderWindow *>(r->GetRenderWindow())->GetTextureUnitManager();
     
     int sourceId=tu->Allocate();
-    vtkgl::ActiveTexture(vtkgl::TEXTURE0+sourceId);
+    vtkgl::ActiveTexture(vtkgl::TEXTURE0+static_cast<GLenum>(sourceId));
     this->Pass1->Bind();
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -366,7 +409,7 @@ void vtkGaussianBlurPass::Render(const vtkRenderState *s)
     
     this->FrameBufferObject->UnBind();
     
-    glDrawBuffer(savedDrawBuffer);
+    glDrawBuffer(static_cast<GLenum>(savedDrawBuffer));
     
     // to2 is the source
     

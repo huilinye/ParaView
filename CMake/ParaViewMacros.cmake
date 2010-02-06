@@ -61,3 +61,126 @@ MACRO(PV_PARSE_ARGUMENTS prefix arg_names option_names)
   ENDFOREACH(arg)
   SET(${prefix}_${current_arg_name} ${current_arg_list})
 ENDMACRO(PV_PARSE_ARGUMENTS)
+
+#----------------------------------------------------------------------------
+# Macro for setting values if a user did not overwrite them
+#----------------------------------------------------------------------------
+MACRO(pv_set_if_not_set name value)
+  IF(NOT DEFINED "${name}")
+    SET(${name} "${value}")
+  ENDIF(NOT DEFINED "${name}")
+ENDMACRO(pv_set_if_not_set)
+
+#----------------------------------------------------------------------------
+# When installing system libraries, on non-windows machines, the CMake variable
+# pointing to the library may be a sym-link, in which case we don't simply want
+# to install the symlink, but the actual library. This macro takes care of that.
+# Use it for installing system libraries. Call this only on unix boxes.
+FUNCTION (pv_install_library libpath dest component)
+  IF (NOT WIN32)
+    GET_FILENAME_COMPONENT(dir_tmp ${libpath} PATH)
+    GET_FILENAME_COMPONENT(name_tmp ${libpath} NAME)
+    FILE(GLOB lib_list RELATIVE "${QT_LIB_DIR_tmp}" "${libpath}*")
+    INSTALL(CODE "
+          MESSAGE(STATUS \"Installing ${name_tmp}\")
+          EXECUTE_PROCESS (WORKING_DIRECTORY ${dir_tmp}
+               COMMAND tar c ${lib_list}
+               COMMAND tar -xC \${CMAKE_INSTALL_PREFIX}/${dest})
+               " COMPONENT ${component})
+  ENDIF (NOT WIN32)
+ENDFUNCTION (pv_install_library)
+
+#----------------------------------------------------------------------------
+# Function for adding an executable with support for shared forwarding.
+# Typically, one just uses ADD_EXECUTABLE to add an executable target. However
+# on linuxes when rpath is off, and shared libararies are on, to over come the
+# need for setting the LD_LIBRARY_PATH, we use shared-forwarding. This macro
+# makes it easier to employ shared forwarding if needed. 
+# ARGUMENTS:
+# out_real_exe_suffix -- (out) suffix to be added to the exe-target to locate the
+#                     real executable target when shared forwarding is employed.
+#                     This is empty when shared forwarding is not needed.
+# exe_name        -- (in)  exe target name i.e. the first argument to
+#                    ADD_EXECUTABLE.
+# Any remaining arguments are simply passed on to the ADD_EXECUTABLE call.
+# While writing install rules for this executable. One typically does the
+# following.
+#   INSTALL(TARGETS exe_name
+#           DESTINATION "bin"
+#           COMPONENT Runtime)
+#   IF (pv_exe_suffix)
+#     # Shared forwarding enabled.
+#     INSTALL(TARGETS exe_name${out_real_exe_suffix}
+#             DESTINATION "lib"
+#             COMPONENT Runtime)
+#   ENDIF (pv_exe_suffix)
+#----------------------------------------------------------------------------
+FUNCTION (add_executable_with_forwarding
+            out_real_exe_suffix
+            exe_name
+            )
+  if (NOT DEFINED PV_INSTALL_LIB_DIR)
+    MESSAGE(FATAL_ERROR
+      "PV_INSTALL_LIB_DIR variable must be set before calling add_executable_with_forwarding"
+    )
+  endif (NOT DEFINED PV_INSTALL_LIB_DIR)
+
+  add_executable_with_forwarding2(out_var "" "" 
+    ${PV_INSTALL_LIB_DIR}
+    ${exe_name} ${ARGN})
+  set (${out_real_exe_suffix} "${out_var}" PARENT_SCOPE)
+ENDFUNCTION(add_executable_with_forwarding)
+
+#----------------------------------------------------------------------------
+FUNCTION (add_executable_with_forwarding2
+            out_real_exe_suffix
+            extra_build_dirs
+            extra_install_dirs
+            install_lib_dir
+            exe_name
+            )
+
+  SET(mac_bundle)
+  IF (APPLE)
+    set (largs ${ARGN})
+    LIST (FIND largs "MACOSX_BUNDLE" mac_bundle_index)
+    IF (mac_bundle_index GREATER -1)
+      SET (mac_bundle TRUE)
+    ENDIF (mac_bundle_index GREATER -1)
+  ENDIF (APPLE)
+
+  SET(PV_EXE_SUFFIX)
+  IF (BUILD_SHARED_LIBS AND CMAKE_SKIP_RPATH AND NOT mac_bundle)
+    IF(NOT WIN32)
+      SET(exe_output_path ${EXECUTABLE_OUTPUT_PATH})
+      IF (NOT EXECUTABLE_OUTPUT_PATH)
+        SET (exe_output_path ${CMAKE_BINARY_DIR})
+      ENDIF (NOT EXECUTABLE_OUTPUT_PATH)
+      SET(PV_EXE_SUFFIX -real)
+      SET(PV_FORWARD_DIR_BUILD "${exe_output_path}")
+      SET(PV_FORWARD_DIR_INSTALL "../${install_lib_dir}")
+      SET(PV_FORWARD_PATH_BUILD "\"${PV_FORWARD_DIR_BUILD}\"")
+      SET(PV_FORWARD_PATH_INSTALL "\"${PV_FORWARD_DIR_INSTALL}\"")
+      FOREACH(dir ${extra_build_dirs})
+        SET (PV_FORWARD_PATH_BUILD "${PV_FORWARD_PATH_BUILD},\"${dir}\"")
+      ENDFOREACH(dir)
+      FOREACH(dir ${extra_install_dirs})
+        SET (PV_FORWARD_PATH_INSTALL "${PV_FORWARD_PATH_INSTALL},\"${dir}\"")
+      ENDFOREACH(dir)
+
+      SET(PV_FORWARD_EXE ${exe_name}${PV_EXE_SUFFIX})
+      CONFIGURE_FILE(
+        ${ParaView_SOURCE_DIR}/Servers/Executables/pv-forward.c.in
+        ${CMAKE_CURRENT_BINARY_DIR}/${exe_name}-forward.c
+        @ONLY IMMEDIATE)
+      add_executable(${exe_name}
+        ${CMAKE_CURRENT_BINARY_DIR}/${exe_name}-forward.c)
+      ADD_DEPENDENCIES(${exe_name} ${exe_name}${PV_EXE_SUFFIX})
+    ENDIF(NOT WIN32)
+  ENDIF (BUILD_SHARED_LIBS AND CMAKE_SKIP_RPATH AND NOT mac_bundle)
+
+  add_executable(${exe_name}${PV_EXE_SUFFIX} ${ARGN})
+
+  set (${out_real_exe_suffix} "${PV_EXE_SUFFIX}" PARENT_SCOPE)
+ENDFUNCTION (add_executable_with_forwarding2)
+          

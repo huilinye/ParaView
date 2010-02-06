@@ -27,8 +27,10 @@ IF (VTK_USE_RENDERING AND VTK_USE_DISPLAY)
     TestPCAStatistics
     TestPruneTreeFilter
     TestRandomGraphSource
+    TestSimple3DCirclesStrategy
     TestStringToCategory
     TestTable
+    TestTableSplitColumnComponents.cxx
     TestTreeMapLayoutStrategy
     TestThresholdTable
     TestVariantArray

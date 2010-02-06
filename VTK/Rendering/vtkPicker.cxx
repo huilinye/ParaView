@@ -106,11 +106,6 @@ void vtkPicker::MarkPicked(vtkAssemblyPath *path, vtkProp3D *prop3D,
   // The point has to be transformed back into world coordinates.
   // Note: it is assumed that the transform is in the correct state.
   this->Transform->TransformPoint(mapperPos,this->PickPosition);
-  
-  // Invoke pick method if one defined - actor goes first
-  prop3D->Pick();
-  this->InvokeEvent(vtkCommand::PickEvent,NULL);
-
 }
 
 // Perform pick operation with selection point provided. Normally the 
@@ -124,7 +119,6 @@ int vtkPicker::Pick(double selectionX, double selectionY, double selectionZ,
   vtkCamera *camera;
   vtkAbstractMapper3D *mapper = NULL;
   double p1World[4], p2World[4], p1Mapper[4], p2Mapper[4];
-  int picked=0;
   int *winSize;
   double x, y, t;
   double *viewport;
@@ -376,34 +370,61 @@ int vtkPicker::Pick(double selectionX, double selectionY, double selectionZ,
         bounds[0] -= tol; bounds[1] += tol; 
         bounds[2] -= tol; bounds[3] += tol; 
         bounds[4] -= tol; bounds[5] += tol; 
-        if ( vtkBox::IntersectBox(bounds, p1Mapper, 
-                                  ray, hitPosition, t) )
+
+        if ( vtkBox::IntersectBox(bounds, p1Mapper, ray, hitPosition, t) )
           {
-          t = this->IntersectWithLine(p1Mapper, p2Mapper, 
-                                      tol*0.333*(scale[0]+scale[1]+scale[2]), path, 
-                                      static_cast<vtkProp3D *>(propCandidate), mapper);
+          t = this->IntersectWithLine(
+            p1Mapper, p2Mapper, tol*0.333*(scale[0]+scale[1]+scale[2]), 
+            path, static_cast<vtkProp3D *>(propCandidate), mapper);
+
           if ( t < VTK_DOUBLE_MAX )
             {
-            picked = 1;
-            if ( ! this->Prop3Ds->IsItemPresent(prop) )
+            double p[3];
+            p[0] = (1.0 - t)*p1World[0] + t*p2World[0];
+            p[1] = (1.0 - t)*p1World[1] + t*p2World[1];
+            p[2] = (1.0 - t)*p1World[2] + t*p2World[2];
+
+            // The IsItemPresent method returns "index+1" 
+            int prevIndex = this->Prop3Ds->IsItemPresent(prop)-1;
+
+            if (prevIndex >= 0)
+              {
+              // If already in list, set point to the closest point
+              double oldp[3];
+              this->PickedPositions->GetPoint(prevIndex, oldp);
+              if (vtkMath::Distance2BetweenPoints(p1World, p) <
+                  vtkMath::Distance2BetweenPoints(p1World, oldp))
+                {
+                this->PickedPositions->SetPoint(prevIndex, p);
+                }
+              }
+            else
               {
               this->Prop3Ds->AddItem(static_cast<vtkProp3D *>(prop));
-              }
-            this->PickedPositions->InsertNextPoint
-              ((1.0 - t)*p1World[0] + t*p2World[0],
-               (1.0 - t)*p1World[1] + t*p2World[1],
-               (1.0 - t)*p1World[2] + t*p2World[2]);
 
-            // backwards compatibility: also add to this->Actors
-            if (actor)
-              {
-              this->Actors->AddItem(actor);
+              this->PickedPositions->InsertNextPoint(p);
+
+              // backwards compatibility: also add to this->Actors
+              if (actor)
+                {
+                this->Actors->AddItem(actor);
+                }
               }
             }
           }
         }//if visible and pickable and not transparent
       }//for all parts
     }//for all actors
+
+  int picked = 0;
+
+  if (this->Path)
+    {
+    // Invoke pick method if one defined - prop goes first
+    this->Path->GetFirstNode()->GetViewProp()->Pick();
+    this->InvokeEvent(vtkCommand::PickEvent,NULL);
+    picked = 1;
+    }
 
   // Invoke end pick method if defined
   this->InvokeEvent(vtkCommand::EndPickEvent,NULL);
@@ -476,6 +497,7 @@ void vtkPicker::Initialize()
   this->MapperPosition[2] = 0.0;
 
   this->Mapper = NULL;
+  this->DataSet = NULL;
   this->GlobalTMin = VTK_DOUBLE_MAX;
 }
 

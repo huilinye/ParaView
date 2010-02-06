@@ -30,12 +30,12 @@ See Copyright.txt or http://www.kitware.com/Copyright.htm for details.
 #include <vtkPiecewiseFunction.h>
 #include <vtkCamera.h>
 
-int main (int argc, char **argv)
+int main (int argc, char *argv[])
 {
   if (argc < 2)
     {
     cout << "Usage: " << argv[0] << " DATADIR/headsq/quarter" << endl;
-    return 1;
+    return EXIT_FAILURE;
     }
 
   // Create the renderer, the render window, and the interactor. The renderer
@@ -53,7 +53,7 @@ int main (int argc, char **argv)
   // The following reader is used to read a series of 2D slices (images)
   // that compose the volume. The slice dimensions are set, and the
   // pixel spacing. The data Endianness must also be specified. The reader
-  // usese the FilePrefix in combination with the slice number to construct
+  // uses the FilePrefix in combination with the slice number to construct
   // filenames using the format FilePrefix.%d. (In this case the FilePrefix
   // is the root name of the file: quarter.)
   vtkSmartPointer<vtkVolume16Reader> v16 =
@@ -140,7 +140,7 @@ int main (int argc, char **argv)
 
   // Set up an initial view of the volume.  The focal point will be the
   // center of the volume, and the camera position will be 400mm to the
-  // patient's left (whis is our right).
+  // patient's left (which is our right).
   vtkCamera *camera = ren->GetActiveCamera();
   double *c = volume->GetCenter();
   camera->SetFocalPoint(c[0], c[1], c[2]);
@@ -154,5 +154,5 @@ int main (int argc, char **argv)
   iren->Initialize();
   iren->Start();
 
-  return 0;
+  return EXIT_SUCCESS;
 }

@@ -41,6 +41,13 @@ public:
   vtkTypeRevisionMacro(vtkAMRDualGridHelper,vtkObject);
   void PrintSelf(ostream& os, vtkIndent indent);
   
+  // Description:
+  // An option to turn off copying ghost values across process boundaries.
+  // If the ghost values are already correct, then the extra communication is 
+  // not necessary.  If this assumption is wrong, this option will produce
+  // cracks / seams.
+  void SetSkipGhostCopy(int val) { this->SkipGhostCopy = val;}
+  
   // Set this before you call initialize.
   void SetEnableDegenerateCells(int v) { this->EnableDegenerateCells = v;}
 
@@ -139,6 +146,8 @@ private:
     vtkAMRDualGridHelperBlock* highResBlock,
     void* messagePtr);
 
+  int SkipGhostCopy;
+
 private:
   vtkAMRDualGridHelper(const vtkAMRDualGridHelper&);  // Not implemented.
   void operator=(const vtkAMRDualGridHelper&);  // Not implemented.
@@ -176,6 +185,7 @@ public:
   
   // This is the global index of the origin of the image.
   // This is important since not all blocks have ghost layers on minimum side.
+  // It appears that this is the origin of the ghost pixel if the image has a ghost pixel.
   int OriginIndex[3];
   
   // The process that has the actual data (image).

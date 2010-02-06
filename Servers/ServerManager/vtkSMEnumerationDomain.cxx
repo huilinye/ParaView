@@ -54,7 +54,7 @@ vtkSMEnumerationDomain::~vtkSMEnumerationDomain()
 //---------------------------------------------------------------------------
 unsigned int vtkSMEnumerationDomain::GetNumberOfEntries()
 {
-  return this->EInternals->Entries.size();
+  return static_cast<unsigned int>(this->EInternals->Entries.size());
 }
 
 //---------------------------------------------------------------------------
@@ -67,6 +67,17 @@ int vtkSMEnumerationDomain::GetEntryValue(unsigned int idx)
 const char* vtkSMEnumerationDomain::GetEntryText(unsigned int idx)
 {
   return this->EInternals->Entries[idx].Text.c_str();
+}
+
+//---------------------------------------------------------------------------
+const char* vtkSMEnumerationDomain::GetEntryTextForValue(int value)
+{
+  unsigned int idx = 0;
+  if (!this->IsInDomain(value, idx))
+    {
+    return NULL;
+    }
+  return this->GetEntryText(idx);
 }
 
 //---------------------------------------------------------------------------

@@ -7,7 +7,7 @@
    All rights reserved.
 
    ParaView is a free software; you can redistribute it and/or modify it
-   under the terms of the ParaView license version 1.2. 
+   under the terms of the ParaView license version 1.2.
 
    See License_v1.2.txt for the full ParaView license.
    A copy of this license can be obtained by contacting
@@ -97,7 +97,7 @@ uint qHash(const QPointer<T> key)
   return qHash((T*)key);
 }
 //-----------------------------------------------------------------------------
-class pqViewManager::pqInternals 
+class pqViewManager::pqInternals
 {
 public:
   QPointer<pqView> ActiveView;
@@ -115,9 +115,9 @@ public:
   bool DontCreateDeleteViewsModules;
 
   // When a frame is being closed, we create an undo element
-  // and  save it to be pushed on the stack after the 
+  // and  save it to be pushed on the stack after the
   // view in the frame has been unregistered. The sequence
-  // of operations on the undo stack is 
+  // of operations on the undo stack is
   // * unregister view
   // * close frame
   vtkSmartPointer<vtkSMUndoElement> CloseFrameUndoElement;
@@ -135,7 +135,7 @@ pqViewManager::pqViewManager(QWidget* _parent/*=null*/)
   this->Internal->DontCreateDeleteViewsModules = false;
   this->Internal->MaxWindowSize = QSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
 
-  pqServerManagerModel* smModel = 
+  pqServerManagerModel* smModel =
     pqApplicationCore::instance()->getServerManagerModel();
   if (!smModel)
     {
@@ -151,17 +151,17 @@ pqViewManager::pqViewManager(QWidget* _parent/*=null*/)
     this, SLOT(onViewRemoved(pqView*)));
 
   // Record creation/removal of frames.
-  QObject::connect(this, SIGNAL(frameAdded(pqMultiViewFrame*)), 
+  QObject::connect(this, SIGNAL(frameAdded(pqMultiViewFrame*)),
     this, SLOT(onFrameAdded(pqMultiViewFrame*)));
-  QObject::connect(this, SIGNAL(preFrameRemoved(pqMultiViewFrame*)), 
+  QObject::connect(this, SIGNAL(preFrameRemoved(pqMultiViewFrame*)),
     this, SLOT(onPreFrameRemoved(pqMultiViewFrame*)));
-  QObject::connect(this, SIGNAL(frameRemoved(pqMultiViewFrame*)), 
+  QObject::connect(this, SIGNAL(frameRemoved(pqMultiViewFrame*)),
     this, SLOT(onFrameRemoved(pqMultiViewFrame*)));
 
-  QObject::connect(this, 
+  QObject::connect(this,
     SIGNAL(afterSplitView(const Index&, Qt::Orientation, float, const Index&)),
     this, SLOT(onSplittingView(const Index&, Qt::Orientation, float, const Index&)));
-  
+
   QObject::connect(&this->Internal->ConvertMenu, SIGNAL(triggered(QAction*)),
     this, SLOT(onConvertToTriggered(QAction*)));
 
@@ -240,7 +240,7 @@ void pqViewManager::buildConvertMenu()
         }
       }
     }
-    
+
   QAction* view_action = new QAction("None", this);
   view_action->setData("None");
   this->Internal->ConvertMenu.addAction(view_action);
@@ -298,13 +298,13 @@ void pqViewManager::onFrameAdded(pqMultiViewFrame* frame)
   QSignalMapper* sm = new QSignalMapper(frame);
   sm->setMapping(frame, frame);
   QObject::connect(frame, SIGNAL(activeChanged(bool)), sm, SLOT(map()));
-  QObject::connect(sm, SIGNAL(mapped(QWidget*)), 
+  QObject::connect(sm, SIGNAL(mapped(QWidget*)),
     this, SLOT(onActivate(QWidget*)));
 
   sm = new QSignalMapper(frame);
   sm->setMapping(frame, frame);
   QObject::connect(frame, SIGNAL(contextMenuRequested()), sm, SLOT(map()));
-  QObject::connect(sm, SIGNAL(mapped(QWidget*)), 
+  QObject::connect(sm, SIGNAL(mapped(QWidget*)),
     this, SLOT(onFrameContextMenuRequested(QWidget*)));
 
   // A newly added frames gets collected as an empty frame.
@@ -342,7 +342,7 @@ void pqViewManager::onFrameAdded(pqMultiViewFrame* frame)
   ui.ConvertActionsFrame->layout()->setSpacing(0);
 
   // Add buttons for all conversion actions.
-  QList<QAction*> convertActions = 
+  QList<QAction*> convertActions =
     this->Internal->ConvertMenu.actions();
   foreach (QAction* action, convertActions)
     {
@@ -370,7 +370,7 @@ void pqViewManager::onFrameRemovedInternal(pqMultiViewFrame* frame)
   this->Internal->PendingFrames.removeAll(frame);
   if (!this->Internal->Frames.contains(frame))
     {
-    // A frame with no view module has been removed. 
+    // A frame with no view module has been removed.
     return;
     }
 
@@ -517,13 +517,13 @@ void pqViewManager::disconnect(pqMultiViewFrame* frame, pqView* view)
     }
   frame->setMainWidget(NULL);
 
-  // Search for view frame action group plugins and have them remove their 
+  // Search for view frame action group plugins and have them remove their
   // actions for this view's frame if need be.
   QObjectList ifaces =
     pqApplicationCore::instance()->getPluginManager()->interfaces();
   foreach(QObject* iface, ifaces)
     {
-    pqViewFrameActionGroupInterface* agi = 
+    pqViewFrameActionGroupInterface* agi =
         qobject_cast<pqViewFrameActionGroupInterface*>(iface);
     if(agi)
       {
@@ -548,13 +548,13 @@ void pqViewManager::assignFrame(pqView* view)
   if (this->Internal->PendingFrames.size() == 0)
     {
     // Create a new frame.
- 
+
     pqUndoStack* undoStack = pqApplicationCore::instance()->getUndoStack();
     if (undoStack && (undoStack->getInUndo() ||
       undoStack->getInRedo()))
       {
-      // HACK: If undo-redoing, don't split 
-      // to create a new pane, it will be created 
+      // HACK: If undo-redoing, don't split
+      // to create a new pane, it will be created
       // as a part of the undo/redo.
       this->Internal->PendingViews.push_back(view);
       return;
@@ -579,15 +579,15 @@ void pqViewManager::assignFrame(pqView* view)
       qCritical() << "Internal state of frames has got messed up!";
       return;
       }
-  
+
     this->Internal->DontCreateDeleteViewsModules = true;
     QSize cur_size = oldFrame->size();
     // Before we split, make sure that no view is currently maximized.
     this->restoreWidget(0); // that a funny name for this un-maximize button.
-    if (cur_size.width() > 1.15*cur_size.height()) 
+    if (cur_size.width() > 1.15*cur_size.height())
         // give a slight preference to
         // vertical splitting.
-                      
+
       {
       frame = this->splitWidgetHorizontal(oldFrame);
       }
@@ -633,7 +633,7 @@ void pqViewManager::assignFrame(pqView* view)
 //-----------------------------------------------------------------------------
 pqMultiViewFrame* pqViewManager::getFrame(pqView* view) const
 {
-  return view? 
+  return view?
     qobject_cast<pqMultiViewFrame*>(view->getWidget()->parentWidget()) : NULL;
 }
 
@@ -719,7 +719,7 @@ void pqViewManager::onConvertToTriggered(QAction* action)
 
   BEGIN_UNDO_SET(QString("Convert View to %1").arg(type));
 
-  pqObjectBuilder* builder = 
+  pqObjectBuilder* builder =
     pqApplicationCore::instance()-> getObjectBuilder();
   if (this->Internal->ActiveView)
     {
@@ -753,7 +753,7 @@ void pqViewManager::onActivate(QWidget* obj)
     {
     this->Internal->ActiveView = 0;
     emit this->activeViewChanged(this->Internal->ActiveView);
-    return; 
+    return;
     }
 
   pqMultiViewFrame* frame = qobject_cast<pqMultiViewFrame*>(obj);
@@ -816,7 +816,7 @@ bool pqViewManager::eventFilter(QObject* caller, QEvent* e)
           e->type() == QEvent::Resize)
     {
     // Update ViewPosition and GUISize properties on all view modules.
-    this->updateViewPositions(); 
+    this->updateViewPositions();
     }
   else if(e->type() == pqOpenFilesEvent::eventId)
     {
@@ -838,6 +838,8 @@ void pqViewManager::setMaxViewWindowSize(const QSize& win_size)
     {
     frame->mainWidget()->setMaximumSize(this->Internal->MaxWindowSize);
     }
+
+  emit maxViewWindowSizeSet(!win_size.isEmpty());
 }
 
 //-----------------------------------------------------------------------------
@@ -845,10 +847,10 @@ void pqViewManager::updateViewPositions()
 {
   // find a rectangle that bounds all views
   QRect totalBounds;
-  
+
   foreach(pqView* view, this->Internal->Frames)
     {
-    if (view->getWidget()->isVisible())
+    if (view->getWidget() && view->getWidget()->isVisible())
       {
       QRect bounds = view->getWidget()->rect();
       bounds.moveTo(view->getWidget()->mapToGlobal(QPoint(0,0)));
@@ -857,7 +859,7 @@ void pqViewManager::updateViewPositions()
     }
 
   /// GUISize, ViewSize and ViewPosition properties are managed
-  /// by the GUI, the undo/redo stack should not worry about 
+  /// by the GUI, the undo/redo stack should not worry about
   /// the changes made to them.
   BEGIN_UNDO_EXCLUDE();
 
@@ -867,8 +869,8 @@ void pqViewManager::updateViewPositions()
     // set size containing all views
     int gui_size[2] = { totalBounds.width(), totalBounds.height() };
     vtkSMPropertyHelper(view->getProxy(), "GUISize", true).Set(gui_size, 2);
-    
-    if (!view->getWidget()->isVisible())
+
+    if (!view->getWidget() || !view->getWidget()->isVisible())
       {
       continue;
       }
@@ -907,7 +909,7 @@ void pqViewManager::updateCompactViewPositions()
   QSize totalGUISize = this->getMultiViewWidget()->size();
 
   /// GUISize, ViewSize and ViewPosition properties are managed
-  /// by the GUI, the undo/redo stack should not worry about 
+  /// by the GUI, the undo/redo stack should not worry about
   /// the changes made to them.
   BEGIN_UNDO_EXCLUDE();
 
@@ -981,7 +983,7 @@ void pqViewManager::saveState(vtkPVXMLElement* root)
 }
 
 //-----------------------------------------------------------------------------
-bool pqViewManager::loadState(vtkPVXMLElement* rwRoot, 
+bool pqViewManager::loadState(vtkPVXMLElement* rwRoot,
   vtkSMProxyLocator* locator)
 {
   if (!rwRoot || !rwRoot->GetName())
@@ -998,9 +1000,9 @@ bool pqViewManager::loadState(vtkPVXMLElement* rwRoot,
   // When state is loaded by the server manager,
   // the View Manager will have already layed out all the view modules
   // using a default/random scheme. The role of this method
-  // is to re-arrange all the views based on the layout in the 
+  // is to re-arrange all the views based on the layout in the
   // state file.
-  this->Internal->DontCreateDeleteViewsModules = true; 
+  this->Internal->DontCreateDeleteViewsModules = true;
 
   // We remove all "randomly" laid out frames. Note that we are not
   // destroying the view modules, only the frames that got created
@@ -1019,8 +1021,8 @@ bool pqViewManager::loadState(vtkPVXMLElement* rwRoot,
   this->Internal->PendingFrames.clear();
 
   this->Superclass::loadState(rwRoot);
-  this->Internal->DontCreateDeleteViewsModules = false; 
-  
+  this->Internal->DontCreateDeleteViewsModules = false;
+
   this->Internal->Frames.clear();
   for(unsigned int cc=0; cc < rwRoot->GetNumberOfNestedElements(); cc++)
     {
@@ -1163,10 +1165,10 @@ void pqViewManager::frameDrop(pqMultiViewFrame* acceptingFrame,
           }
         }
       }
-    
+
     if(originatingFrame && originatingFrame != acceptingFrame)
       {
-      this->hide(); 
+      this->hide();
       //Switch the originalFrame with the frame;
 
       Index originatingIndex=this->indexOf(originatingFrame);
@@ -1180,7 +1182,7 @@ void pqViewManager::frameDrop(pqMultiViewFrame* acceptingFrame,
 
       this->updateViewPositions();
       delete tempFrame;
-      
+
       this->show();
       }
     e->accept();
@@ -1192,7 +1194,7 @@ void pqViewManager::frameDrop(pqMultiViewFrame* acceptingFrame,
 }
 
 //-----------------------------------------------------------------------------
-void pqViewManager::onSplittingView(const Index& index, 
+void pqViewManager::onSplittingView(const Index& index,
   Qt::Orientation orientation, float fraction, const Index& childIndex)
 {
   BEGIN_UNDO_SET("Split View");
