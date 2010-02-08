@@ -30,7 +30,7 @@ function purge_all() {
 # fixup the bundle
 function fixup_bundle() {
   echo "-- Fixing up the application bundle"
-  DESTDIR="$staging_area/destdir" "@CMAKE_COMMAND@" -P "@CMAKE_BINARY_DIR@/paraview_OSX_MakeStandAloneBundle.cmake" || return 1
+  DESTDIR="$staging_area/destdir" "@CMAKE_COMMAND@" -P "@CMAKE_CURRENT_BINARY_DIR@/ParaView_OSX_MakeStandAloneBundle.cmake" || return 1
 }
 
 # copy it into the dmg-source folder
