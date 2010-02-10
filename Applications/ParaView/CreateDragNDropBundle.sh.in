@@ -15,22 +15,25 @@ this_script="$0"
 
 function cleanup() {
   echo "-- Cleaning away disk image source folder"
-  rm -rf "$dmg_src_folder"
+  rm -rf "$dmg_src_folder" || return 1
 
   echo "-- Cleaning away temporary disk image"
-  rm -f "$staging_area/rw.dmg"
+  rm -f "$staging_area/rw.dmg" || return 1
 }
 
 function purge_all() {
   cleanup || return 1
   echo "-- Cleaning away final disk image"
-  rm -f "$dmg_path"
+  rm -f "$dmg_path" || return 1
 }
 
 # fixup the bundle
 function fixup_bundle() {
   echo "-- Fixing up the application bundle"
-  DESTDIR="$staging_area/destdir" "@CMAKE_COMMAND@" -P "@CMAKE_CURRENT_BINARY_DIR@/ParaView_OSX_MakeStandAloneBundle.cmake" || return 1
+  trap "rm -rf $staging_area/destdir; return 1" INT ERR
+  DESTDIR="$staging_area/destdir" "@CMAKE_COMMAND@" \
+    -P "@CMAKE_CURRENT_BINARY_DIR@/ParaView_OSX_MakeStandAloneBundle.cmake" || return 1
+  trap - INT ERR
 }
 
 # copy it into the dmg-source folder
@@ -40,6 +43,7 @@ function create_src_folder() {
     echo "Error: '$staging_area/destdir/Applications/$app_name' does not exist!" >&2
     return 1
   fi
+  trap "rm -rf $dmg_src_folder; return 1" INT ERR
   mkdir -p "$dmg_src_folder" || return 1
   rsync -a "$staging_area/destdir/Applications/$app_name" "$dmg_src_folder/" || return 1
 
@@ -64,6 +68,7 @@ function create_src_folder() {
   fi
 
   touch "$dmg_src_folder" || return 1
+  trap - INT ERR
 }
 
 # create temporary image
@@ -73,24 +78,28 @@ function create_rw_image() {
     return 1
   fi
   echo "-- Creating the temporary disk image '$staging_area/rw.dmg'"
-  hdiutil create -srcfolder "$dmg_src_folder" -format UDRW -scrub -volname "$vol_name" "$staging_area/rw.dmg"
+  trap "rm -rf $staging_area/rw.dmg; return 1" ERR INT
+  hdiutil create -uid 99 -gid 99 -srcfolder "$dmg_src_folder" -format UDRW -scrub -volname "$vol_name" "$staging_area/rw.dmg" || return 1
+  trap - ERR INT
 }
 
 function beautify_rw_image() {
   # open it
   echo "-- Mounting temporary disk image '$staging_area/rw.dmg' on '$staging_area/mnt'"
-  hdiutil attach -readwrite -noverify "$staging_area/rw.dmg" -mountpoint "$staging_area/mnt"
+  hdiutil attach -readwrite -noverify "$staging_area/rw.dmg" -mountpoint "$staging_area/mnt" || return 1
+
+  trap "hdiutil detach $staging_area/rw.dmg; return 1" INT ERR
 
   # make sure root folder is opened when image is
   echo "-- Blessing '$staging_area/mnt'"
-  bless --folder "$staging_area/mnt" --openfolder "$staging_area/mnt"
-  # hack: wait for completion
+  bless --folder "$staging_area/mnt" --openfolder "$staging_area/mnt" || return 1
   open "$staging_area/mnt"
-  sleep 5
+  # hack: wait for completion
+  sleep 3
 
   # position items
   echo "-- Beautifying DMG Finder appearence"
-  for dummy in 1 2; do # HACK to make it stick in 10.6
+  for dummy in 1 2 3; do # HACK to make it stick in 10.6
     osascript - << EOF
 tell application "Finder"
   set f to POSIX file "$staging_area/mnt" as alias
@@ -113,14 +122,14 @@ tell application "Finder"
     set background picture of the icon view options of container window to file ".background:pvDmgBackground.png"
     set the bounds of the container window to {150, 100, 620, 420}
     update without registering applications
-    delay 5 -- Sync
+    delay 3 -- Sync
     close
-    -- HACK to make it stick on 10.6 (WTF?!)
+    -- HACK to make it stick on 10.6 (this is just FUBAR!)
     open
     close
   end tell
   -- Sync
-  delay 5
+  delay 3
 end tell
 EOF
     if [ $? -ne 0 ]; then
@@ -130,11 +139,13 @@ EOF
 
   # turn on custom volume icon
   echo "-- Setting volume icon"
-  /Developer/Tools/SetFile -a C "$staging_area/mnt"
+  /Developer/Tools/SetFile -a C "$staging_area/mnt" || return 1
 
   # close
   echo "-- Detaching temporary disk image"
-  hdiutil detach "$staging_area/mnt"
+  hdiutil detach "$staging_area/mnt" || return 1
+
+  trap - INT ERR
 }
 
 # create read-only (final) disk image
@@ -143,6 +154,7 @@ function create_final_image() {
     echo "Error: '$dmg_path exists! Cannot create final disk image." >&2
     return 1
   fi
+  trap "rm -rf $dmg_path; return 1" INT ERR
   echo "-- Creating final DMG '$dmg_path' from temporary image"
   hdiutil convert "$staging_area/rw.dmg" -format UDZO -imagekey zlib-level=9 -o "$dmg_path" || return 1
 
@@ -154,6 +166,7 @@ function create_final_image() {
   /Developer/Tools/Rez Carbon.r @CMAKE_CURRENT_BINARY_DIR@/DmgResource.r -a -o "$dmg_path" || return 1
   echo "--   Flatten image"
   hdiutil flatten "$dmg_path" || return 1
+  trap - INT ERR
 }
 
 # usage instructions
