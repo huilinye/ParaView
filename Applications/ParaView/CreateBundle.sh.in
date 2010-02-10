@@ -63,9 +63,6 @@ cp -p "$ParaViewBinaryDir/bin/.plugins" "$SupportDir/"
 echo "Copy python scripts"
 cp -Rp "${ParaViewBinaryDir}/Utilities/VTKPythonWrapping/paraview" "$PythonDir/"
 
-# Create an empty qt.conf so that we don't try to load Qt plugins.
-touch "$ParaView_App/Contents/Resources/qt.conf"
-
 # Assistant is no longer needed.
 ## Copy the Qt Assistant application into the Support directory
 ##

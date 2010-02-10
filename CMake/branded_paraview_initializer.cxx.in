@@ -94,6 +94,7 @@ bool pq@BPC_NAME@Initializer::Initialize(int argc, char* argv[])
 #ifndef PARAVIEW_BUILD_SHARED_LIBS
   Q_INIT_RESOURCE(@BPC_NAME@_generated);
   Q_INIT_RESOURCE(@BPC_NAME@_configuration);
+  Q_INIT_RESOURCE(@BPC_NAME@_qt_config);
   Q_INIT_RESOURCE(@BPC_NAME@_help);
 #endif  
 
@@ -103,12 +104,6 @@ bool pq@BPC_NAME@Initializer::Initialize(int argc, char* argv[])
   this->Splash->setMask(pixmap.createMaskFromColor(QColor(Qt::transparent)));
   this->Splash->show();
 
-  // Not sure why this is needed. Andy added this ages ago with comment saying
-  // needed for Mac apps. Need to check that it's indeed still required.
-  QDir dir(QApplication::applicationDirPath());
-  dir.cdUp();
-  dir.cd("Plugins");
-  QApplication::addLibraryPath(dir.absolutePath());
 
   // On Mac replace the handler for kAEOpenDocuments and if using Cocoa
   // replace the fileOpen method of QCocoaApplicationDelegate
