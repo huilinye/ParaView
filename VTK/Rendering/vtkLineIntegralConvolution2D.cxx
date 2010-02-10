@@ -293,6 +293,8 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
   if ( this->VectorField->GetComponents() < 2 )
     {
     vtkErrorMacro( "VectorField must have at least 2 components." );
+    timer->Delete();
+    timer = NULL;
     return 0;
     }
 
@@ -327,7 +329,7 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
     vectorTransform[1] = 1.0 / ( inHeight * this->GridSpacings[1] );
     }
   vtkLICDebug( "vectorTransform: " << vectorTransform[0] << ", " 
-                                      << vectorTransform[1] );
+                                   << vectorTransform[1] );
 
   // size of the output LIC image
   unsigned int outWidth  = ( extent[1] - extent[0] + 1 ) 
@@ -354,6 +356,9 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
                   LoadSupportedExtension( "GL_VERSION_1_3" )  )
     {
     vtkErrorMacro( "the required GL_VERSION_1_3 missing" );
+    timer->Delete();
+    timer   = NULL;
+    context = NULL;
     return 0;
     }
   
@@ -442,7 +447,6 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
   utilities->SetSourceCode( vtkLineIntegralConvolution2D_fs );
   shaderProg->GetShaders()->AddItem( utilities );
   utilities->Delete();
-  utilities = NULL;
   
   // load the supporting fragment shader program that tells which two
   // components are needed from each 3D vector
@@ -452,7 +456,6 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
   selectComps->SetSourceCode( additionalKernel.c_str() );
   shaderProg->GetShaders()->AddItem( selectComps );
   selectComps->Delete();
-  selectComps = NULL;
   
   // load the fragment shader program that implements the LIC process
   vtkShader2 * glslFS1 = vtkShader2::New();
@@ -604,7 +607,49 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
       
       // specify the pair of texture objects as the render targets
       frameBufs->SetActiveBuffers( 2, writeBufs );
-      frameBufs->Start( outWidth, outHeight, false );
+      if (  !frameBufs->Start( outWidth, outHeight, false )  )
+        {
+        shaderProg->GetShaders()->RemoveItem( glslFS1 );
+        shaderProg->GetShaders()->RemoveItem( utilities );
+        shaderProg->GetShaders()->RemoveItem( selectComps );
+        
+        glslFS1->ReleaseGraphicsResources();
+        glslFS2->ReleaseGraphicsResources();
+        utilities->ReleaseGraphicsResources();
+        selectComps->ReleaseGraphicsResources();
+        shaderProg->ReleaseGraphicsResources();
+        glslFS1->Delete();
+        glslFS2->Delete();
+        shaderProg->Delete();
+        
+        frameBufs->Delete();
+        tcords0->Delete();
+        tcords1->Delete();
+        licTex0->Delete();
+        licTex1->Delete();
+        lhpfTex->Delete();
+        timer->Delete();
+        
+        glslFS1    = NULL;
+        glslFS2    = NULL;
+        utilities  = NULL;
+        selectComps= NULL;
+        shaderProg = NULL;
+        frameBufs  = NULL;
+        tcords0    = NULL;
+        tcords1    = NULL;
+        licTex0    = NULL;
+        licTex1    = NULL;
+        lhpfTex    = NULL;
+        timer      = NULL;
+        
+        readBuffs  = NULL;
+        writeBufs  = NULL;
+        pairs[0]   = NULL;
+        pairs[1]   = NULL;
+        
+        return 0;
+        }
       vtkLICDebug( "active render buffers Ids: " << writeBufs[0] << ", " 
                       << writeBufs[1] << " for step #" << stepIdx );
 
@@ -684,7 +729,49 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
     // set the output texture of the filter as the active one of the FBO
     vtkLICDebug( "active render buffer Id: " << filterWriteId );
     frameBufs->SetActiveBuffers( 1, &filterWriteId );
-    frameBufs->Start( outWidth, outHeight, false );
+    if (  !frameBufs->Start( outWidth, outHeight, false )  )
+      {
+      shaderProg->GetShaders()->RemoveItem( glslFS2 );
+      shaderProg->GetShaders()->RemoveItem( utilities );
+      shaderProg->GetShaders()->RemoveItem( selectComps );
+        
+      glslFS1->ReleaseGraphicsResources();
+      glslFS2->ReleaseGraphicsResources();
+      utilities->ReleaseGraphicsResources();
+      selectComps->ReleaseGraphicsResources();
+      shaderProg->ReleaseGraphicsResources();
+      glslFS1->Delete();
+      glslFS2->Delete();
+      shaderProg->Delete();
+      
+      frameBufs->Delete();
+      tcords0->Delete();
+      tcords1->Delete();
+      licTex0->Delete();
+      licTex1->Delete();
+      lhpfTex->Delete();
+      timer->Delete();
+      
+      glslFS1    = NULL;
+      glslFS2    = NULL;
+      utilities  = NULL;
+      selectComps= NULL;
+      shaderProg = NULL;
+      frameBufs  = NULL;
+      tcords0    = NULL;
+      tcords1    = NULL;
+      licTex0    = NULL;
+      licTex1    = NULL;
+      lhpfTex    = NULL;
+      timer      = NULL;
+      
+      readBuffs  = NULL;
+      writeBufs  = NULL;
+      pairs[0]   = NULL;
+      pairs[1]   = NULL;
+      
+      return 0;
+      }
   
     shaderProg->Use();
     if( !shaderProg->IsValid() )
@@ -757,6 +844,7 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
     this->Noise->UnBind();
     vtkTextureObject * tempTex = frameBufs->GetColorBuffer( 4 );
     tempTex->Bind();
+    tempTex = NULL;
   
     shaderProg->Use(); 
     
@@ -800,7 +888,49 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
       
         // specify the pair of texture objects as the render targets
         frameBufs->SetActiveBuffers( 2, writeBufs );
-        frameBufs->Start( outWidth, outHeight, false );
+        if (  !frameBufs->Start( outWidth, outHeight, false )  )
+          {
+          shaderProg->GetShaders()->RemoveItem( glslFS1 );
+          shaderProg->GetShaders()->RemoveItem( utilities );
+          shaderProg->GetShaders()->RemoveItem( selectComps );
+        
+          glslFS1->ReleaseGraphicsResources();
+          glslFS2->ReleaseGraphicsResources();
+          utilities->ReleaseGraphicsResources();
+          selectComps->ReleaseGraphicsResources();
+          shaderProg->ReleaseGraphicsResources();
+          glslFS1->Delete();
+          glslFS2->Delete();
+          shaderProg->Delete();
+      
+          frameBufs->Delete();
+          tcords0->Delete();
+          tcords1->Delete();
+          licTex0->Delete();
+          licTex1->Delete();
+          lhpfTex->Delete();
+          timer->Delete();
+      
+          glslFS1    = NULL;
+          glslFS2    = NULL;
+          utilities  = NULL;
+          selectComps= NULL;
+          shaderProg = NULL;
+          frameBufs  = NULL;
+          tcords0    = NULL;
+          tcords1    = NULL;
+          licTex0    = NULL;
+          licTex1    = NULL;
+          lhpfTex    = NULL;
+          timer      = NULL;
+      
+          readBuffs  = NULL;
+          writeBufs  = NULL;
+          pairs[0]   = NULL;
+          pairs[1]   = NULL;
+      
+          return 0;
+          }
         vtkLICDebug( "active render buffers Ids: " << writeBufs[0] << ", " 
                         << writeBufs[1] << " for step #" << stepIdx );
 
@@ -856,6 +986,8 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
   // LIC upon the destruction of this class)
   glslFS1->ReleaseGraphicsResources();
   glslFS2->ReleaseGraphicsResources();
+  utilities->ReleaseGraphicsResources();
+  selectComps->ReleaseGraphicsResources();
   shaderProg->ReleaseGraphicsResources();
   glslFS1->Delete();
   glslFS2->Delete();
@@ -866,6 +998,8 @@ int vtkLineIntegralConvolution2D::Execute( unsigned int extent[4] )
   lhpfTex->Delete();
   glslFS1    = NULL;
   glslFS2    = NULL;
+  utilities  = NULL;
+  selectComps= NULL;
   shaderProg = NULL;
   frameBufs  = NULL;
   tcords0    = NULL;

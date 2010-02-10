@@ -34,6 +34,8 @@ vtkPlot::vtkPlot()
   this->Color[2] = 0;
   this->Color[3] = 255;
   this->Width = 2.0;
+  this->Label = NULL;
+  this->UseIndexForXSeries = false;
   this->Data = vtkContextMapper2D::New();
   this->Selection = NULL;
 }
@@ -46,6 +48,7 @@ vtkPlot::~vtkPlot()
     this->Data->Delete();
     this->Data = NULL;
     }
+  this->SetLabel(NULL);
 }
 
 //-----------------------------------------------------------------------------
@@ -56,6 +59,23 @@ void vtkPlot::SetColor(unsigned char r, unsigned char g, unsigned char b,
   this->Color[1] = g;
   this->Color[2] = b;
   this->Color[3] = a;
+}
+
+//-----------------------------------------------------------------------------
+void vtkPlot::SetColor(double r, double g, double b)
+{
+  this->Color[0] = static_cast<unsigned char>(r*255.0);
+  this->Color[1] = static_cast<unsigned char>(g*255.0);
+  this->Color[2] = static_cast<unsigned char>(b*255.0);
+}
+
+//-----------------------------------------------------------------------------
+void vtkPlot::GetColor(double rgb[3])
+{
+  for (int i = 0; i < 3; ++i)
+    {
+    rgb[i] = double(this->Color[0]) / 255.0;
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -76,9 +96,11 @@ void vtkPlot::SetInput(vtkTable *table, const char *xColumn,
                 << "\", " << "Y column = \"" << vtkstd::string(yColumn) << "\"");
 
   this->Data->SetInput(table);
-  this->Data->SetInputArrayToProcess(0, 0, 0, vtkDataObject::FIELD_ASSOCIATION_ROWS,
+  this->Data->SetInputArrayToProcess(0, 0, 0,
+                                     vtkDataObject::FIELD_ASSOCIATION_ROWS,
                                      xColumn);
-  this->Data->SetInputArrayToProcess(1, 0, 0, vtkDataObject::FIELD_ASSOCIATION_ROWS,
+  this->Data->SetInputArrayToProcess(1, 0, 0,
+                                     vtkDataObject::FIELD_ASSOCIATION_ROWS,
                                      yColumn);
 }
 

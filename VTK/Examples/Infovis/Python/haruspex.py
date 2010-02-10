@@ -31,7 +31,7 @@ def Usage( outModelPrefix, outDataName ):
     print "\t                    multicorrelative"
     print "\t                    pca"
     print "\t                    kmeans"
-    print "\t [-b <bitcode>]  Engine options bitcode. Default is 0. Available bits are:"
+    print "\t [-o <bitcode>]  Engine options bitcode. Default is 0. Available bits are:"
     print "\t                    1st bit: assess"
     print "\t                    2nd bit: test"
     print "\t [-m <prefix>]    CSV input model file. Default: calculate model from scratch"
@@ -55,6 +55,7 @@ def ParseCommandLine():
     haruspexName = ""
     outModelPrefix = "outputModel"
     outDataName = "outputData.csv"
+    outTestName = "outputTest.csv"
     columnsListName =""
     
     # Try to hash command line with respect to allowable flags
@@ -117,7 +118,7 @@ def ParseCommandLine():
 
         print
 
-    return [ inDataName, inModelPrefix, columnsListName, haruspexName, options, outDataName, outModelPrefix ]
+    return [ inDataName, inModelPrefix, columnsListName, haruspexName, options, outDataName, outTestName, outModelPrefix ]
 ############################################################
 
 ############################################################
@@ -255,27 +256,25 @@ def ReadColumnsList( columnsListName ):
 ############################################################
 
 ############################################################
-# Write haruspex output data
-def WriteOutData( haruspex, outDataName ):
+# Write table from haruspex output port (i.e., for data or tests)
+def WriteOutTable( haruspex, outPort, outFileName, outPortName ):
     # Declare use of global variable
     global verbosity
 
     if verbosity > 0:
-        print "# Saving output (annotated) data:"
+        print "# Saving output table of port", outPort
 
     # Set CSV writer parameters
-    outDataWriter = vtkDelimitedTextWriter()
-    outDataWriter.SetFieldDelimiter(",")
-    outDataWriter.SetFileName( outDataName )
-    outDataWriter.SetInputConnection( haruspex.GetOutputPort( 0 ) )
-    outDataWriter.Update()
+    outTableWriter = vtkDelimitedTextWriter()
+    outTableWriter.SetFieldDelimiter(",")
+    outTableWriter.SetFileName( outFileName )
+    outTableWriter.SetInputConnection( haruspex.GetOutputPort( outPort ) )
+    outTableWriter.Update()
 
     if verbosity > 0:
-        print "  Wrote", outDataName
-        print
+        print "  Wrote", outPortName
         if verbosity > 2:
-            print "# Output data:"
-            haruspex.GetOutput( 0 ).Dump( 10 )
+            haruspex.GetOutput( outPort ).Dump( 10 )
             print
 ############################################################
 
@@ -461,7 +460,7 @@ def CalculateStatistics( inDataReader, inModelReader, columnsList, haruspex, opt
 # Main function
 def main():
     # Parse command line
-    [ inDataName, inModelPrefix, columnsListName, haruspexName, options, outDataName, outModelPrefix ] \
+    [ inDataName, inModelPrefix, columnsListName, haruspexName, options, outDataName, outTestName, outModelPrefix ] \
       = ParseCommandLine()
 
     # Verify that haruspex name makes sense and if so instantiate accordingly
@@ -486,7 +485,10 @@ def main():
     CalculateStatistics( inDataReader, inModelReader, columnsList, haruspex, options )
 
     # Save output (annotated) data
-    WriteOutData( haruspex, outDataName )
+    WriteOutTable( haruspex, 0, outDataName, "annotated data" )
+
+    # Save output of statistical tests
+    WriteOutTable( haruspex, 2, outTestName, "statistical test results" )
 
     # Save output model (statistics)
     WriteOutModel( haruspex, outModelPrefix )

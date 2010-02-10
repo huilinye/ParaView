@@ -52,7 +52,7 @@
 
 #include <hdf5.h>    // for the HDF data loading engine
 
-#include <algorithm> // for 'find()'
+#include <vtkstd/algorithm> // for 'find()'
 #include <vtkstd/map>
 #include <vtkstd/string>
 #include <vtkstd/vector>
@@ -1657,6 +1657,10 @@ vtkFlashReader::vtkFlashReader()
 {
   this->FileName = NULL;
   this->Internal = new vtkFlashReaderInternal;
+  this->MaxLevel = 1000;
+  this->LoadMortonCurve = 0;
+  this->LoadParticles = 1;
+
   
   this->SetNumberOfInputPorts( 0 );
 
@@ -2167,6 +2171,20 @@ int vtkFlashReader::FillOutputPortInformation
 }
 
 //-----------------------------------------------------------------------------
+void vtkFlashReader::GenerateBlockMap()
+{
+  this->BlockMap.clear();
+  this->Internal->ReadMetaData();
+  for ( int j = 0; j < this->Internal->NumberOfBlocks; j ++ )
+    {
+    if (this->GetBlockLevel(j) <= this->MaxLevel)
+      {
+      this->BlockMap.push_back(j);
+      }    
+    }  
+}
+
+//-----------------------------------------------------------------------------
 int vtkFlashReader::RequestData( vtkInformation * vtkNotUsed( request ),
   vtkInformationVector ** vtkNotUsed( inputVector ),
   vtkInformationVector  * outputVector )
@@ -2176,15 +2194,22 @@ int vtkFlashReader::RequestData( vtkInformation * vtkNotUsed( request ),
                          (  outInf->Get( vtkDataObject::DATA_OBJECT() )  );
   
   this->Internal->ReadMetaData();
-  for ( int j = 0; j < this->Internal->NumberOfBlocks; j ++ )
+  this->GenerateBlockMap();
+  int numBlocks = this->BlockMap.size();
+  for ( int j = 0; j < numBlocks; j ++ )
     {
     this->GetBlock( j, output );
     }
    
-  int   blockIdx = this->Internal->NumberOfBlocks;
-  this->GetParticles( blockIdx, output );
-  this->GetMortonCurve( blockIdx, output );
-  
+  int   blockIdx = this->BlockMap.size();
+  if (this->LoadParticles)
+    {
+    this->GetParticles( blockIdx, output );
+    }
+  if (this->LoadMortonCurve)
+    {
+    this->GetMortonCurve( blockIdx, output );
+    }
   outInf = NULL;
   output = NULL;
   
@@ -2192,9 +2217,10 @@ int vtkFlashReader::RequestData( vtkInformation * vtkNotUsed( request ),
 }
 
 // ----------------------------------------------------------------------------
-void vtkFlashReader::GetBlock( int blockIdx, vtkMultiBlockDataSet * multiBlk )
+void vtkFlashReader::GetBlock( int blockMapIdx, vtkMultiBlockDataSet * multiBlk )
 {
   this->Internal->ReadMetaData();
+  int blockIdx = this->BlockMap[blockMapIdx];
   
   if ( multiBlk == NULL || blockIdx < 0 || 
        blockIdx >= this->Internal->NumberOfBlocks )
@@ -2211,8 +2237,8 @@ void vtkFlashReader::GetBlock( int blockIdx, vtkMultiBlockDataSet * multiBlk )
              this->Internal->Blocks[blockIdx].Index, 
              this->Internal->Blocks[blockIdx].Level, 
              this->Internal->Blocks[blockIdx].Type );
-    multiBlk->SetBlock( blockIdx, rectGrid );
-    multiBlk->GetMetaData( blockIdx )
+    multiBlk->SetBlock( blockMapIdx, rectGrid );
+    multiBlk->GetMetaData( blockMapIdx )
             ->Set( vtkCompositeDataSet::NAME(), blckName );
     }
   
