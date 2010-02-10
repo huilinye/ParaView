@@ -156,6 +156,8 @@ FUNCTION(build_paraview_client BPC_NAME)
     SET (BPC_HAS_GUI_CONFIGURATION_XMLS 1)
   ENDIF (BPC_GUI_CONFIGURATION_XMLS)
 
+  pv_set_if_not_set(BPC_QT_CONF_IN "${branding_source_dir}/qt.conf.in")
+
   # Generate a resource file out of the splash image.
   GENERATE_QT_RESOURCE_FROM_FILES(
     "${CMAKE_CURRENT_BINARY_DIR}/${BPC_NAME}_generated.qrc" 
@@ -170,6 +172,20 @@ FUNCTION(build_paraview_client BPC_NAME)
     "${CMAKE_CURRENT_BINARY_DIR}/${BPC_NAME}_generated.qrc"
     "${CMAKE_CURRENT_BINARY_DIR}/${BPC_NAME}_configuration.qrc"
     )
+
+  # Generate qt.conf for resource file to tell Qt to look for its plugins (e.g.
+  # libqsqlite) in the Plugins folder
+  IF(APPLE)
+    SET(BPC_PLUGINS_DIR "Plugins")
+    CONFIGURE_FILE("${BPC_QT_CONF_IN}" "${CMAKE_CURRENT_BINARY_DIR}/qt.conf")
+    # Generate resource file with qt.conf
+    GENERATE_QT_RESOURCE_FROM_FILES(
+      "${CMAKE_CURRENT_BINARY_DIR}/${BPC_NAME}_qt_config.qrc"
+      "/qt/etc"
+      "${CMAKE_CURRENT_BINARY_DIR}/qt.conf")
+    LIST(APPEND ui_resources
+      "${CMAKE_CURRENT_BINARY_DIR}/${BPC_NAME}_qt_config.qrc")
+  ENDIF(APPLE)
 
   IF (BPC_COMPRESSED_HELP_FILE)
     # If a help collection file is specified, create a resource from it so that
