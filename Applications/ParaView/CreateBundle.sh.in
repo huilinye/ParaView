@@ -63,9 +63,6 @@ cp -p "$ParaViewBinaryDir/bin/.plugins" "$SupportDir/"
 echo "Copy python scripts"
 cp -Rp "${ParaViewBinaryDir}/Utilities/VTKPythonWrapping/paraview" "$PythonDir/"
 
-# Create an empty qt.conf so that we don't try to load Qt plugins.
-touch "$ParaView_App/Contents/Resources/qt.conf"
-
 # Assistant is no longer needed.
 ## Copy the Qt Assistant application into the Support directory
 ##
@@ -95,7 +92,3 @@ rm -rf "$PythonDir/paraview/pv_compile_complete"
 #rm -rf "$SupportDir/Documentation/cmake_install.cmake"
 #rm -rf "$SupportDir/Documentation/CTestTestfile.cmake"
 #rm -rf "$SupportDir/Documentation/Makefile"
-
-# Add an empty qt.conf to prevent the loading of imageformats plugins
-#
-touch "$ResourcesDir/qt.conf"
